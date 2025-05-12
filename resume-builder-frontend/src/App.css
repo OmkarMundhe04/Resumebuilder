@@ -1,0 +1,153 @@
+/* Reset */
+:root {
+  --bg: #f4f6f8;
+  --text: #222;
+  --navbar-bg: #ffffff;
+  --button-text: #444;
+  --button-hover-bg: #e6f0ff;
+  --footer-bg: #111;
+  --footer-text: #fff;
+}
+
+body[data-theme="dark"] {
+  --bg: #1c1c1e;
+  --text: #f2f2f2;
+  --navbar-bg: #2c2c2e;
+  --button-text: #dddddd;
+  --button-hover-bg: #333c57;
+  --footer-bg: #000;
+  --footer-text: #ccc;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: inherit;
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--navbar-bg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.navbar-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.navbar-text {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.nav-links button {
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background-color: transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--button-text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-links button:hover,
+.nav-links button:focus {
+  color: #007bff;
+  border-color: #007bff;
+  background-color: var(--button-hover-bg);
+  outline: none;
+}
+
+/* Main Content */
+main {
+  flex: 1;
+  padding: 2rem 1rem;
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  padding: 2rem 0;
+  text-align: center;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.footer .fs-15 {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* Utility */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .navbar-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    margin-top: 1rem;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .nav-links button {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+}

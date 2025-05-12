@@ -1,0 +1,185 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f7f7f7;
+  color: #333;
+}
+
+h2, h3, h4 {
+  font-family: 'Roboto', sans-serif;
+  color: #222;
+}
+
+/* Container for the resume builder */
+.resume-builder {
+  max-width: 800px;
+  margin: 30px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #4CAF50;
+}
+
+/* Form Container */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+input {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  transition: border 0.3s;
+}
+
+input:focus {
+  border-color: #4CAF50;
+  outline: none;
+}
+
+button {
+  padding: 12px 20px;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 1.25rem;
+  margin: 20px 0 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Add Field Button */
+.add-field-btn {
+  background-color: #f1f1f1;
+  color: #4CAF50;
+  border: 1px solid #ddd;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.add-field-btn:hover {
+  background-color: #e2e2e2;
+}
+
+/* Remove Field Button */
+.remove-field-btn {
+  background-color: transparent;
+  color: #f44336;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 5px;
+}
+
+.remove-field-btn:hover {
+  text-decoration: underline;
+}
+
+/* Resume Template */
+.resume-template {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.resume-template h3 {
+  font-size: 2rem;
+  color: #4CAF50;
+  margin-bottom: 10px;
+}
+
+.resume-template p {
+  font-size: 1.1rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Print Button */
+.print-btn {
+  display: inline-block;
+  padding: 12px 20px;
+  background-color: #FF5722;
+  color: white;
+  border-radius: 4px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+.print-btn:hover {
+  background-color: #e64a19;
+}
+
+/* Responsive 2-column layout for inputs on wider screens */
+@media (min-width: 768px) {
+  .input-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .input-group input {
+    flex: 1;
+  }
+}
+
+/* Hide form and buttons during print */
+@media print {
+  .form-container,
+  .print-btn,
+  .add-field-btn,
+  .remove-field-btn {
+    display: none;
+  }
+
+  .resume-template {
+    box-shadow: none;
+    background-color: white;
+    color: black;
+  }
+}

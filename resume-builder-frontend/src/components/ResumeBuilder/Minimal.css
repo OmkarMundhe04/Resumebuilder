@@ -1,0 +1,84 @@
+/* Minimal.css */
+.preview-section.minimal {
+  background-color: #f0f0f0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.preview-section.minimal h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #444;
+}
+
+.preview-section.minimal h2 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #555;
+}
+
+.preview-section.minimal p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.preview-section.minimal ul {
+  list-style-type: disc;
+  margin-left: 20px;
+}
+
+.preview-section.minimal ul li {
+  font-size: 16px;
+}
+
+.resume-template {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #2f3542;
+    background-color: #f1f2f6;
+    padding: 30px;
+    border-left: 6px solid #3742fa;
+  }
+  
+  .resume-template h3 {
+    font-size: 24px;
+    color: #3742fa;
+    margin-bottom: 5px;
+  }
+  
+  .resume-template .section h4 {
+    font-size: 18px;
+    color: #2f3542;
+    border-bottom: 1px solid #ced6e0;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+  
+  .resume-template .section {
+    margin-bottom: 20px;
+  }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+  
+    .resume-template, .resume-template * {
+      visibility: visible;
+    }
+  
+    .resume-template {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      page-break-after: always;
+    }
+  
+    .print-btn, .form-container, .title {
+      display: none !important;
+    }
+  }
+  

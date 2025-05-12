@@ -1,0 +1,91 @@
+/* ResumeBuilder.css */
+.resume-builder {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    text-align: center;
+    font-size: 36px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+  
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+  }
+  
+  .input-group input:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+  
+  .section-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #34495e;
+    margin-bottom: 10px;
+  }
+  
+  .add-field-btn {
+    background-color: #3498db;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .add-field-btn:hover {
+    background-color: #2980b9;
+  }
+  
+  .submit-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: center;
+  }
+  
+  .submit-btn:hover {
+    background-color: #218838;
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 600px) {
+    .resume-builder {
+      padding: 15px;
+    }
+  
+    .title {
+      font-size: 28px;
+    }
+  
+    .submit-btn {
+      width: 100%;
+    }
+  }
+  
