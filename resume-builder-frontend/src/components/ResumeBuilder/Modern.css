@@ -1,0 +1,53 @@
+/* Modern.css */
+.preview-section.modern {
+  background-color: lightgreen;
+  font-family: Arial, sans-serif;
+}
+
+.resume-template {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2d3436;
+    background: linear-gradient(to right, #ece9e6, #ffffff);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  
+  .resume-template h3 {
+    font-size: 30px;
+    color: #0984e3;
+    border-bottom: 2px solid #dfe6e9;
+    padding-bottom: 5px;
+  }
+  
+  .resume-template .section h4 {
+    font-size: 22px;
+    color: #6c5ce7;
+    margin-bottom: 10px;
+  }
+  
+  .resume-template .section {
+    margin-bottom: 25px;
+  }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+  
+    .resume-template, .resume-template * {
+      visibility: visible;
+    }
+  
+    .resume-template {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      page-break-after: always;
+    }
+  
+    .print-btn, .form-container, .title {
+      display: none !important;
+    }
+  }
+  

@@ -1,0 +1,299 @@
+/* === General Reset === */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(145deg, #eef2f7, #ffffff);
+  color: #2b2b2b;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* === Theme: Light/Dark Mode === */
+body[data-theme="dark"] {
+  background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+  color: #e0e0e0;
+}
+
+body[data-theme="dark"] .resume-builder {
+  background-color: #333;
+}
+
+body[data-theme="dark"] h1, 
+body[data-theme="dark"] h2 {
+  color: #ffffff;
+}
+
+body[data-theme="dark"] .input-field {
+  background-color: #555;
+  color: #e0e0e0;
+  border: 1px solid #666;
+}
+
+body[data-theme="dark"] button {
+  background: linear-gradient(to right, #004799, #0a66c2);
+  color: white;
+}
+
+body[data-theme="dark"] .section-block {
+  background-color: #444;
+  border: 1px dashed #666;
+}
+
+/* === Main Layout === */
+.resume-builder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 3rem 1.5rem;
+  max-width: 1300px;
+  margin: auto;
+  justify-content: center;
+}
+
+/* === Section Containers === */
+.form-section,
+.preview-section {
+  flex: 1;
+  min-width: 380px;
+  background-color: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+  transition: transform 0.3s ease-in-out;
+}
+
+.form-section:hover,
+.preview-section:hover {
+  transform: translateY(-3px);
+}
+
+/* === Headings === */
+h1, h2 {
+  margin-top: 0;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 1.8rem;
+  color: #1d1d1d;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin-top: 1.5rem;
+  color: #0a66c2;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid #e4e4e4;
+}
+
+/* === Inputs === */
+.input-field {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  border: 1px solid #cfd8dc;
+  border-radius: 10px;
+  background-color: #f9fafb;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: #0a66c2;
+  box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.15);
+  outline: none;
+}
+
+/* === Buttons === */
+button {
+  font-weight: 600;
+  padding: 0.7rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin: 0.4rem 0.3rem;
+  transition: background 0.25s ease-in-out, transform 0.15s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
+}
+
+.add-btn {
+  background: linear-gradient(to right, #0a66c2, #004799);
+  color: white;
+}
+
+.add-btn:hover {
+  background: linear-gradient(to right, #084c96, #003f87);
+}
+
+.remove-btn {
+  background: linear-gradient(to right, #e53935, #c62828);
+  color: white;
+}
+
+.remove-btn:hover {
+  background: linear-gradient(to right, #c62828, #b71c1c);
+}
+
+.print-btn {
+  background: linear-gradient(to right, #28a745, #218838);
+  color: white;
+}
+
+.print-btn:hover {
+  background: linear-gradient(to right, #218838, #1e7e34);
+}
+
+/* === Section Boxes === */
+.section-block {
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  border: 1px dashed #ccc;
+  background-color: #f7f9fc;
+  transition: background-color 0.3s ease;
+}
+
+.section-block:hover {
+  background-color: #f0f4f8;
+}
+
+/* === Preview Section === */
+.preview-section .resume-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.profile-image {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #0a66c2;
+  background-color: #fff;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
+}
+
+.preview-text-block {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #ccc;
+}
+
+/* === List and Link Styles === */
+ul {
+  padding-left: 1.2rem;
+  margin-top: 0.6rem;
+}
+
+a {
+  color: #0a66c2;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* === Template Styling === */
+.template-classic {
+  font-family: 'Georgia', serif;
+  color: #2c3e50;
+}
+
+.template-modern {
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+  background-color: #f9f9f9;
+}
+
+.template-minimal {
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #fff;
+  color: #000;
+  border-left: 4px solid #0a66c2;
+  padding-left: 1rem;
+}
+
+/* === Print Layout === */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .preview-section, .preview-section * {
+    visibility: visible;
+  }
+
+  .preview-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 2rem;
+    box-shadow: none;
+  }
+
+  .form-section,
+  .print-btn,
+  .add-btn,
+  .remove-btn {
+    display: none !important;
+  }
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .resume-builder {
+    flex-direction: column;
+    padding: 2rem 1rem;
+  }
+
+  .form-section,
+  .preview-section {
+    padding: 1.5rem;
+  }
+
+  button {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+
+  .resume-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .profile-image {
+    margin-bottom: 1rem;
+  }
+}
+
+/* === Dark Mode Toggle Button === */
+.toggle-theme-btn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background-color: #0a66c2;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.toggle-theme-btn:hover {
+  background-color: #084c96;
+}
