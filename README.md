@@ -210,7 +210,7 @@ git push origin feature-name
 **Omkar Mundhe**
 
 - GitHub: https://github.com/OmkarMundhe04
-- LinkedIn: *(Add your LinkedIn URL)*
+- LinkedIn: https://www.linkedin.com/in/omkarmundhe04
 
 ---
 
@@ -221,7 +221,3 @@ If you found this project helpful, please consider giving it a ⭐ on GitHub.
 It motivates further development and helps others discover the project.
 
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License.
