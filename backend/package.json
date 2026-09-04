@@ -1,9 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "node tests/corpusRunner.test.js",
+    "test:all": "node tests/corpusRunner.test.js && node tests/careerProfileAi.test.js && node tests/coverLetter.test.js && node tests/resumeAiAssistant.test.js"
   },
   "keywords": [],
   "author": "",

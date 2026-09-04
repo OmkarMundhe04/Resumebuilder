@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, AlertTriangle, AlertCircle, Download, X, FileText, Clock } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, AlertCircle, Download, X, FileText } from 'lucide-react';
 import { Button } from '../ui';
 
 // Sanitize filename against dangerous path traversal and OS characters
@@ -7,6 +7,7 @@ export const sanitizeFilename = (name) => {
   if (!name) return 'Resume';
   return name
     .replace(/[/\\:*?"<>|]/g, '_')
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1f\x80-\x9f]/g, '')
     .trim()
     .slice(0, 100);

@@ -1,9 +1,13 @@
 {
-  "name": "resume-builder-using-vanilla-javascript-master",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "resumebuilder-platform",
+  "version": "2.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "cmd /c start.bat",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm start --prefix resume-builder-frontend",
+    "build": "npm run build --prefix resume-builder-frontend",
+    "test": "npm test --prefix backend",
+    "test:all": "npm run test:all --prefix backend && npm test --prefix resume-builder-frontend"
   },
   "keywords": [],
   "author": "",

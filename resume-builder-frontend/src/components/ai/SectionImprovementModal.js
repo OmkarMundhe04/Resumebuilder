@@ -85,17 +85,15 @@ const SectionImprovementModal = ({
     } finally {
       setLoading(false);
     }
-  }, [isEmptyContent, type, originalText, itemContext, targetRole, jobDescription]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmptyContent, type, originalText, targetRole, jobDescription]);
 
   useEffect(() => {
-    if (isOpen) {
-      if (isEmptyContent) {
-        setLoading(false);
-      } else {
-        fetchEnhancements();
-      }
+    if (isOpen && !isEmptyContent) {
+      fetchEnhancements();
     }
-  }, [isOpen, isEmptyContent, fetchEnhancements]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isEmptyContent]);
 
   if (!isOpen) return null;
 

@@ -1,29 +1,40 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppShell from './components/layout/AppShell';
+import CustomCursor from './components/motion/CustomCursor';
 
-// Pages
+// Critical Path Pages (Loaded immediately)
 import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
-import CareerProfile from './pages/CareerProfile';
-import ResumeBuilder from './pages/ResumeBuilder';
-import JobMatch from './pages/JobMatch';
-import CoverLetterBuilder from './pages/CoverLetterBuilder';
-import Applications from './pages/Applications';
-import Portfolio from './pages/Portfolio';
-import TemplatesGallery from './pages/TemplatesGallery';
-import LearningCenter from './pages/LearningCenter';
-import Settings from './pages/Settings';
-import PrivacyCenter from './pages/PrivacyCenter';
-import PublicResumeView from './pages/PublicResumeView';
-import TrustCenter from './pages/TrustCenter';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-import CustomCursor from './components/motion/CustomCursor';
+// Lazy-Loaded Workspace Pages (Split into on-demand chunks)
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const CareerProfile = lazy(() => import('./pages/CareerProfile'));
+const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+const JobMatch = lazy(() => import('./pages/JobMatch'));
+const CoverLetterBuilder = lazy(() => import('./pages/CoverLetterBuilder'));
+const Applications = lazy(() => import('./pages/Applications'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const TemplatesGallery = lazy(() => import('./pages/TemplatesGallery'));
+const LearningCenter = lazy(() => import('./pages/LearningCenter'));
+const Settings = lazy(() => import('./pages/Settings'));
+const PrivacyCenter = lazy(() => import('./pages/PrivacyCenter'));
+const PublicResumeView = lazy(() => import('./pages/PublicResumeView'));
+const TrustCenter = lazy(() => import('./pages/TrustCenter'));
+
+// Clean loading placeholder for lazy routes
+const RouteLoader = () => (
+  <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-app)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="spin-slow" style={{ width: '18px', height: '18px', border: '2px solid var(--border-subtle)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%' }} />
+      <span>Loading page...</span>
+    </div>
+  </div>
+);
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1047124376483-demo-resumebuilder-clientid.apps.googleusercontent.com';
 
@@ -63,7 +74,8 @@ function App() {
         <ToastProvider>
           <AuthProvider>
             <CustomCursor />
-            <Routes>
+            <Suspense fallback={<RouteLoader />}>
+              <Routes>
               {/* Public Landing & Auth */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
@@ -181,6 +193,7 @@ function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </AuthProvider>
         </ToastProvider>
       </BrowserRouter>

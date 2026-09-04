@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles,
-  CheckCircle2,
   AlertCircle,
   X,
   Plus,
@@ -21,7 +20,8 @@ const SkillSuggestionsModal = ({
   targetRole = '',
   jobDescription = '',
   projectContext = null,
-  onApplySkills
+  onApplySkills,
+  onAddSkills
 }) => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -71,13 +71,15 @@ const SkillSuggestionsModal = ({
     } finally {
       setLoading(false);
     }
-  }, [resume, profile, role, jd, projectContext]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, jd]);
 
   useEffect(() => {
     if (isOpen) {
       fetchSuggestions();
     }
-  }, [isOpen, fetchSuggestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -102,8 +104,9 @@ const SkillSuggestionsModal = ({
       return;
     }
 
-    if (onApplySkills) {
-      onApplySkills(toAdd);
+    const callback = onApplySkills || onAddSkills;
+    if (callback) {
+      callback(toAdd);
       addToast(`Added ${toAdd.length} verified skill(s).`, 'success');
       onClose();
     }

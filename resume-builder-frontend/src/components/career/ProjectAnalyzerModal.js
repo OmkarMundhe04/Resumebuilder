@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  ArrowRight,
   ShieldCheck,
   RefreshCw,
   Plus

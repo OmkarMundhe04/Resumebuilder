@@ -10,7 +10,6 @@ import {
   FileText,
   TrendingUp,
   AlertTriangle,
-  ArrowRight,
   Plus,
   Sliders,
   Check
@@ -47,7 +46,7 @@ const RoleAnalysisModal = ({
   // Selected skills to apply from optimization
   const [selectedOptSkills, setSelectedOptSkills] = useState({});
 
-  const runAnalysis = useCallback(async () => {
+  const runAnalysis = useCallback(async (tabToRun = activeTab) => {
     if (!targetRole.trim() && !jobDescription.trim()) {
       setError('Please provide at least a Target Role / Title or Job Description to evaluate alignment.');
       return;
@@ -57,7 +56,7 @@ const RoleAnalysisModal = ({
     setError(null);
 
     try {
-      if (activeTab === 'analysis') {
+      if (tabToRun === 'analysis') {
         const res = await api.post('/ai/role-analysis', {
           resume,
           targetRole: targetRole.trim(),
@@ -97,13 +96,15 @@ const RoleAnalysisModal = ({
     } finally {
       setLoading(false);
     }
-  }, [activeTab, resume, targetRole, jobDescription, addToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, targetRole, jobDescription, addToast]);
 
   useEffect(() => {
     if (isOpen) {
-      runAnalysis();
+      runAnalysis(activeTab);
     }
-  }, [isOpen, activeTab, runAnalysis]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeTab]);
 
   if (!isOpen) return null;
 

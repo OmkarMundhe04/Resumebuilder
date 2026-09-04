@@ -6,7 +6,6 @@ import {
   X,
   ShieldCheck,
   RefreshCw,
-  Layers,
   Target
 } from 'lucide-react';
 import api from '../../services/api';
@@ -56,13 +55,15 @@ const ProjectDescriptionModal = ({
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, targetRole, jobDescription]);
 
   useEffect(() => {
     if (isOpen) {
       generateDescriptions();
     }
-  }, [isOpen, generateDescriptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
