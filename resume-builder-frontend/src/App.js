@@ -1,133 +1,190 @@
-import logo from "./assets/images/logo.png";
-import React, { useState, useEffect } from "react";
-import "./App.css";
-import SaveResume from "./components/SaveResume";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ResumeBuilder from "./pages/ResumeBuilder";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ToastProvider } from './context/ToastContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AppShell from './components/layout/AppShell';
+
+// Pages
+import LandingPage from './pages/LandingPage';
+import Dashboard from './pages/Dashboard';
+import CareerProfile from './pages/CareerProfile';
+import ResumeBuilder from './pages/ResumeBuilder';
+import JobMatch from './pages/JobMatch';
+import CoverLetterBuilder from './pages/CoverLetterBuilder';
+import Applications from './pages/Applications';
+import Portfolio from './pages/Portfolio';
+import TemplatesGallery from './pages/TemplatesGallery';
+import LearningCenter from './pages/LearningCenter';
+import Settings from './pages/Settings';
+import PrivacyCenter from './pages/PrivacyCenter';
+import PublicResumeView from './pages/PublicResumeView';
+import TrustCenter from './pages/TrustCenter';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
+import CustomCursor from './components/motion/CustomCursor';
+
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1047124376483-demo-resumebuilder-clientid.apps.googleusercontent.com';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-app)', color: 'var(--text-muted)' }}>
+        Loading Career Platform...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <AppShell>{children}</AppShell>;
+};
+
+// Public Route (Accessible to all, but with AppShell if authenticated)
+const ShellRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) {
+    return <AppShell>{children}</AppShell>;
+  }
+  return children;
+};
 
 function App() {
-  const [resumeSaved, setResumeSaved] = useState(false);
-  const [page, setPage] = useState("register");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [theme, setTheme] = useState("light");
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoggedIn(true);
-      setPage("home");
-    } else {
-      setIsLoggedIn(false);
-      setPage("register");
-    }
-
-    // Load theme from localStorage
-    const storedTheme = localStorage.getItem("theme") || "light";
-    setTheme(storedTheme);
-    document.body.setAttribute("data-theme", storedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.body.setAttribute("data-theme", newTheme);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    setIsLoggedIn(false);
-    setPage("login");
-  };
-
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-    setPage("home");
-  };
-
-  const handleSaveResume = async () => {
-    try {
-      await SaveResume();
-      setResumeSaved(true);
-    } catch (error) {
-      setResumeSaved(false);
-      console.error("Error saving resume:", error);
-    }
-  };
-
-  const renderPage = () => {
-    if (!isLoggedIn && (page === "resume-builder" || page === "home")) {
-      setPage("login");
-      return <Login setPage={setPage} setIsLoggedIn={setIsLoggedIn} onLoginSuccess={handleLoginSuccess} />;
-    }
-
-    switch (page) {
-      case "home":
-        return <Home setPage={setPage} />;
-      case "login":
-        return <Login setPage={setPage} setIsLoggedIn={setIsLoggedIn} onLoginSuccess={handleLoginSuccess} />;
-      case "register":
-        return <Register setPage={setPage} />;
-      case "resume-builder":
-        return (
-          <ResumeBuilder
-            setPage={setPage}
-            onSaveResume={handleSaveResume}
-            resumeSaved={resumeSaved}
-          />
-        );
-      default:
-        return <Login setPage={setPage} setIsLoggedIn={setIsLoggedIn} onLoginSuccess={handleLoginSuccess} />;
-    }
-  };
-
   return (
-    <div className="App">
-      <nav className="navbar">
-        <div className="navbar-container">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <img src={logo} alt="Logo" className="navbar-logo" style={{ height: "30px" }} />
-            <span className="navbar-text">
-              build<span style={{ color: "#007bff" }}>resume</span>
-            </span>
-          </div>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <CustomCursor />
+            <Routes>
+              {/* Public Landing & Auth */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/share/:token" element={<PublicResumeView />} />
 
-          <div className="nav-links">
-            <button onClick={toggleTheme}>
-              {theme === "light" ? "🌙 Dark" : "☀️ Light"}
-            </button>
-            {isLoggedIn ? (
-              <>
-                <button onClick={() => setPage("home")}>Home</button>
-                <button onClick={() => setPage("resume-builder")}>Resume Builder</button>
-                <button onClick={handleLogout}>Logout</button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => setPage("login")}>Login</button>
-                <button onClick={() => setPage("register")}>Register</button>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
+              {/* General Open Pages */}
+              <Route
+                path="/templates"
+                element={
+                  <ShellRoute>
+                    <TemplatesGallery />
+                  </ShellRoute>
+                }
+              />
+              <Route
+                path="/learning"
+                element={
+                  <ShellRoute>
+                    <LearningCenter />
+                  </ShellRoute>
+                }
+              />
+              <Route
+                path="/trust"
+                element={
+                  <ShellRoute>
+                    <TrustCenter />
+                  </ShellRoute>
+                }
+              />
 
-      <main>{renderPage()}</main>
+              {/* Protected Workspace Pages */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/career-profile"
+                element={
+                  <ProtectedRoute>
+                    <CareerProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/builder"
+                element={
+                  <ProtectedRoute>
+                    <ResumeBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/builder/:id"
+                element={
+                  <ProtectedRoute>
+                    <ResumeBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/job-match"
+                element={
+                  <ProtectedRoute>
+                    <JobMatch />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cover-letter"
+                element={
+                  <ProtectedRoute>
+                    <CoverLetterBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/applications"
+                element={
+                  <ProtectedRoute>
+                    <Applications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/portfolio"
+                element={
+                  <ProtectedRoute>
+                    <Portfolio />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/privacy"
+                element={
+                  <ProtectedRoute>
+                    <PrivacyCenter />
+                  </ProtectedRoute>
+                }
+              />
 
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content text-center">
-            <p className="fs-15">
-              &copy; {new Date().getFullYear()} build
-              <span style={{ color: "#007bff" }}>.resume</span> — All Rights Reserved
-            </p>
-          </div>
-        </div>
-      </footer>
-    </div>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }
 

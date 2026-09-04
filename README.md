@@ -1,223 +1,72 @@
-# 📄 ResumeBuilder
+# ResumeBuilder — Truth-First Career Document Platform
 
-A modern, responsive Resume Builder web application that enables users to create professional resumes through an intuitive interface. Users can securely manage their resume data, preview changes in real time, customize themes, and generate print-ready resumes.
-
----
-
-## 🚀 Features
-
-- 🔐 Secure User Authentication (JWT)
-- 👤 User Registration & Login
-- 📝 Create and Edit Resume
-- 💾 Save Resume Data
-- 👀 Live Resume Preview
-- 🎨 Multiple Resume Themes
-- 📥 Print & Download Resume
-- 📱 Responsive Design
-- ⚡ Fast and User-Friendly Interface
+> A production-grade, ATS-optimized Career Document SaaS platform built with React 18, Node.js, Express, and MongoDB.
 
 ---
 
-## 🛠️ Tech Stack
+## 🌟 Core Architecture & Key Pillars
 
-### Frontend
-- React.js
-- HTML5
-- CSS3
-- JavaScript
-- Axios
-
-### Backend
-- Node.js
-- Express.js
-
-### Database
-- MongoDB
-- Mongoose
-
-### Authentication
-- JSON Web Token (JWT)
-- Bcrypt.js
+1. **Canonical Document Engine**:
+   - Single structured source of truth (`CareerProfile`) compiling into the canonical `Resume` model.
+   - 100% data consistency across visual previews, ATS plain-text parsing, native Microsoft Word (`.docx`), PDF (`.pdf`), and plain-text (`.txt`) exports.
+2. **Signature Truth Ledger & Provenance**:
+   - Every bullet statement maps to verified facts (Role, Action, Tools, Measurable Outcome, Metric).
+   - Provenance badges: `VERIFIED`, `IMPORTED`, `SUGGESTED`, `UNSUPPORTED`.
+3. **Multi-Metric ATS Health Engine**:
+   - 7 independent diagnostic categories: *Parser Safety, Job Alignment, Evidence Strength, Human Readability, WCAG Accessibility, Profile Completeness, Formatting Safety*.
+   - Includes **One-Click Safe Repairs** to normalize punctuation and dates with before/after diff preview.
+4. **8 Field-Tested ATS Templates**:
+   - `ATS Classic`, `Modern Professional`, `Technical Arsenal`, `Student & Academic`, `Executive Leadership`, `Academic CV`, `Minimalist Clean`, `Creative Designer`.
+   - Rendered using isolated scoped styles — eliminating runtime `<head>` style pollution.
+5. **Untrusted Job Match & Gap Analysis**:
+   - Paste job descriptions as raw data to extract confirmed skill matches, missing keywords, and 1-click tailored resume generation.
+6. **Career Ecosystem**:
+   - Grounded Cover Letter Builder, Applications Pipeline (Kanban), Responsive Career Portfolio, Tokenized Share Links with Password Protection, and GDPR Data Export / Erasure.
 
 ---
 
-## 📂 Project Structure
+## 🚀 Quick Start & Local Setup
 
-```
-ResumeBuilder/
-│
-├── client/                 # React Frontend
-│   ├── src/
-│   ├── public/
-│   └── package.json
-│
-├── server/                 # Express Backend
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middleware/
-│   └── server.js
-│
-├── README.md
-└── package.json
-```
+### Prerequisites
+- Node.js `v18.0.0+` (Tested on Node `v22.14.0`)
+- MongoDB `v6.0+` running locally or MongoDB Atlas URI
 
----
-
-## ⚙️ Installation
-
-### Clone the repository
-
+### 1. Backend Setup
 ```bash
-git clone https://github.com/OmkarMundhe04/Resumebuilder.git
-```
-
-### Navigate to the project
-
-```bash
-cd Resumebuilder
-```
-
-### Install backend dependencies
-
-```bash
-cd server
+cd backend
 npm install
+node server.js
 ```
+The backend starts on `http://localhost:5000` with health check at `http://localhost:5000/api/health`.
 
-### Install frontend dependencies
-
+### 2. Frontend Setup
 ```bash
-cd ../client
+cd resume-builder-frontend
 npm install
-```
-
----
-
-## ▶️ Run the Project
-
-### Start Backend
-
-```bash
-cd server
 npm start
 ```
+The React frontend starts on `http://localhost:3000`.
 
-### Start Frontend
+---
 
+## 🧪 Automated Testing
+
+### Backend Integration & Isolation Tests
 ```bash
-cd client
-npm start
+cd backend
+node tests/api.test.js
 ```
-
-The application will be available at:
-
-```
-http://localhost:3000
-```
+Runs 13 end-to-end integration assertions covering Health, Auth, Isolation, Career Profile, Canonical Resumes, ATS scoring, Job Match, Evidence Coach, Share Tokens, and GDPR export.
 
 ---
 
-## 🔑 Environment Variables
-
-Create a `.env` file inside the **server** folder.
-
-```env
-PORT=5000
-
-MONGO_URI=your_mongodb_connection_string
-
-JWT_SECRET=your_jwt_secret
-```
+## 🔒 Security & Privacy Commitments
+- **Zero Training**: Candidate resume data is never used for public model training.
+- **Zero Data Selling**: Data is owned 100% by the candidate.
+- **Multi-Tier Rate Limiting**: Dedicated rate limiters for auth, AI endpoints, public token viewers, and general API.
+- **Cryptographic Share Tokens**: Tokenized URLs with configurable expiration, contact masking, and password authentication.
 
 ---
 
-## 📸 Screenshots
-
-Add screenshots here.
-
-Example:
-
-```
-screenshots/
-    home.png
-    login.png
-    dashboard.png
-    resume-preview.png
-```
-
----
-
-## 🎯 Future Improvements
-
-- Multiple Resume Templates
-- PDF Download
-- AI Resume Suggestions
-- Resume Score Analyzer
-- ATS Compatibility Checker
-- Cover Letter Generator
-- Drag-and-Drop Section Reordering
-- Profile Image Upload
-- Dark Mode
-
----
-
-## 📚 Learning Outcomes
-
-This project helped in understanding:
-
-- Full Stack Web Development
-- REST API Development
-- JWT Authentication
-- MongoDB CRUD Operations
-- React Component Architecture
-- State Management
-- Client-Server Communication
-- Secure Password Hashing
-- Responsive UI Design
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a new feature branch
-
-```bash
-git checkout -b feature-name
-```
-
-3. Commit your changes
-
-```bash
-git commit -m "Add new feature"
-```
-
-4. Push to GitHub
-
-```bash
-git push origin feature-name
-```
-
-5. Create a Pull Request
-
----
-
-## 👨‍💻 Author
-
-**Omkar Mundhe**
-
-- GitHub: https://github.com/OmkarMundhe04
-- LinkedIn: https://www.linkedin.com/in/omkarmundhe04
-
----
-
-## ⭐ Support
-
-If you found this project helpful, please consider giving it a ⭐ on GitHub.
-
-It motivates further development and helps others discover the project.
-
----
+## 📄 License
+MIT License. Built for world-class career document creation.

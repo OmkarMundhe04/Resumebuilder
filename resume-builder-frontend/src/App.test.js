@@ -1,8 +1,11 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import BrandLogo from './components/common/BrandLogo';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+describe('ResumeBuilder Core Brand & Shell Tests', () => {
+  test('renders platform brand logo with accessible alt text', () => {
+    render(<BrandLogo size={32} showGlow={true} />);
+    const logoImg = screen.getByAltText(/ResumeBuilder Logo/i);
+    expect(logoImg).toBeInTheDocument();
+  });
 });

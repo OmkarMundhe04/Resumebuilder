@@ -17,7 +17,7 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        window.location.href = "/";
     };
 
     const isLoggedIn = localStorage.getItem("token"); // Check if token is present in localStorage

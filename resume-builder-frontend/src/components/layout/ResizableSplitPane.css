@@ -1,0 +1,245 @@
+/* ==========================================================================
+   RESIZABLE SPLIT-PANE WORKSPACE (IDE Grade)
+   ========================================================================== */
+
+.split-pane-workspace {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  user-select: auto;
+  gap: 0;
+}
+
+.split-pane-workspace.is-dragging {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* Left & Right Panes */
+.split-pane-left,
+.split-pane-right {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), flex 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.split-pane-workspace.is-dragging .split-pane-left,
+.split-pane-workspace.is-dragging .split-pane-right {
+  transition: none !important; /* Instant 1:1 tracking during active drag */
+}
+
+.split-pane-left {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.split-pane-right {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Collapsed States */
+.split-pane-left.is-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.split-pane-right.is-collapsed {
+  display: none !important;
+}
+
+/* Gutter Divider */
+.split-pane-gutter {
+  width: 16px;
+  margin: 0 -2px;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  z-index: 20;
+  flex-shrink: 0;
+  outline: none;
+  touch-action: none;
+}
+
+.split-pane-gutter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background-color: var(--border-subtle);
+  transition: background-color 0.15s ease, width 0.15s ease, box-shadow 0.15s ease;
+}
+
+.split-pane-gutter:hover::before,
+.split-pane-gutter:focus-visible::before,
+.split-pane-workspace.is-dragging .split-pane-gutter::before {
+  background-color: var(--accent-primary);
+  width: 3px;
+  box-shadow: 0 0 8px var(--accent-soft);
+}
+
+/* Gutter Grip Handle */
+.split-pane-grip {
+  position: relative;
+  z-index: 2;
+  width: 14px;
+  height: 38px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill, 9999px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.split-pane-gutter:hover .split-pane-grip,
+.split-pane-gutter:focus-visible .split-pane-grip,
+.split-pane-workspace.is-dragging .split-pane-grip {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-card);
+  transform: scale(1.08);
+}
+
+.split-pane-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: background-color 0.15s ease;
+}
+
+.split-pane-gutter:hover .split-pane-dot,
+.split-pane-gutter:focus-visible .split-pane-dot,
+.split-pane-workspace.is-dragging .split-pane-dot {
+  background-color: var(--accent-primary);
+}
+
+/* Collapse / Expand Trigger Buttons on Divider */
+.split-pane-actions {
+  position: absolute;
+  top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.split-pane-gutter:hover .split-pane-actions,
+.split-pane-gutter:focus-within .split-pane-actions {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.split-pane-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.15s ease;
+}
+
+.split-pane-btn:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  transform: scale(1.1);
+}
+
+/* Collapsed Rail Restore Trigger Tab */
+.split-pane-restore-tab {
+  position: absolute;
+  top: 12px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.split-pane-restore-tab:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.split-pane-restore-left {
+  left: 12px;
+}
+
+.split-pane-restore-right {
+  right: 12px;
+}
+
+/* Mobile & Small Screen Responsive Overrides */
+@media (max-width: 900px) {
+  .split-pane-workspace {
+    flex-direction: column;
+  }
+
+  .builder-mobile-toggle {
+    display: flex !important;
+  }
+
+  .split-pane-gutter {
+    display: none !important;
+  }
+
+  .split-pane-left,
+  .split-pane-right {
+    width: 100% !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+    transition: none !important;
+  }
+
+  .split-pane-left.mobile-hidden,
+  .split-pane-right.mobile-hidden {
+    display: none !important;
+  }
+}

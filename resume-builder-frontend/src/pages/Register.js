@@ -1,119 +1,206 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./Register.css";
-import img1 from "../assets/images/register1.png";
-import img2 from "../assets/images/register2.png";
-import img3 from "../assets/images/register3.png";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import AuthVisualProtagonist from '../components/auth/AuthVisualProtagonist';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
+import BrandLogo from '../components/common/BrandLogo';
+import '../components/auth/Auth.css';
 
-const Register = ({ setPage, onLoginSuccess, setIsLoggedIn }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    username: "",
-    email: "",
-    password: "",
-  });
+const Register = () => {
+  const { register } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
 
-  const images = [img1, img2, img3];
-  const [imageIndex, setImageIndex] = useState(0);
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password.length < 6) {
-      alert("Password must be at least 6 characters long.");
+    if (loading) return;
+    setError(null);
+
+    if (!name || !username || !email || !password) {
+      setError('Please fill out all registration fields.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
+    setLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-      if (response.status === 201 || response.data.success) {
-        alert("User registered successfully.");
-        setPage("login");
-      } else {
-        alert("Unexpected response. Please try again.");
-      }
-    } catch (error) {
-      console.error("Registration Error:", error);
-      if (error.response?.status === 400) {
-        alert("User already exists. Try logging in.");
-      } else {
-        alert(error.response?.data?.message || "Something went wrong. Try again.");
-      }
+      await register({
+        name: name.trim(),
+        username: username.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
+        password
+      });
+      addToast('Account created! Initial Career Profile generated.', 'success');
+      navigate('/dashboard');
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.message || 'Registration failed.';
+      setError(errMsg);
+      addToast(errMsg, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="register-wrapper">
-      <div className="register-left">
-        <h1>
-          Create your <span style={{ color: "#007bff" }}>resume</span> <br />
-          with ease 🚀
-        </h1>
-        <p>
-          Build your professional resume in minutes using our user-friendly platform.
-        </p>
-        <img
-          src={images[imageIndex]}
-          alt="Illustration"
-          className="register-illustration"
-        />
+    <div className="auth-immersive-page">
+      {/* Background Ambient Canvas */}
+      <div className="auth-ambient-canvas">
+        <div className="auth-orb auth-orb-1" />
+        <div className="auth-orb auth-orb-2" />
+        <div className="auth-blueprint-grid" />
       </div>
 
-      <div className="register-form-box">
-        <h2>Create Account</h2>
-        <p className="subtitle">Sign up to begin crafting your future</p>
-        <form onSubmit={handleRegister}>
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <button type="submit" className="register-btn">Register</button>
-        </form>
-        <p className="footer-text">
-          Already have an account?{" "}
-          <span onClick={() => setPage("login")} className="link-text">Login here</span>
-        </p>
+      <div className="auth-split-wrapper">
+        {/* Left: Editorial Form Card */}
+        <motion.div
+          className="auth-form-card"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Link to="/" className="auth-brand-badge">
+            <BrandLogo size={30} rounded={7} showGlow={true} />
+            <span>ResumeBuilder</span>
+          </Link>
+
+          <h1 className="auth-heading">Build your career story.</h1>
+          <p className="auth-subheading">
+            Create one verified career profile. Power precision ATS resumes, job matching, and evidence-grounded cover letters.
+          </p>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0.625rem 0.875rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '8px',
+                color: '#f87171',
+                fontSize: '0.8125rem',
+                marginBottom: '1.25rem'
+              }}
+            >
+              <AlertCircle size={15} flexShrink={0} />
+              <span>{error}</span>
+            </motion.div>
+          )}
+
+          {/* Google One-Click Registration */}
+          <GoogleSignInButton redirectTo="/dashboard" textType="signup_with" />
+
+          <div className="auth-divider">
+            <span>or create account with email</span>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="auth-form-group">
+              <label className="auth-label">Full Name</label>
+              <input
+                type="text"
+                className="auth-input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Omkar Mundhe"
+                required
+                autoFocus
+                disabled={loading}
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label className="auth-label">Username</label>
+              <input
+                type="text"
+                className="auth-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. omkarmundhe"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label className="auth-label">Email Address</label>
+              <input
+                type="email"
+                className="auth-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. omkar@example.com"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label className="auth-label">Password (min 8 characters)</label>
+              <div className="auth-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="auth-input has-toggle"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="auth-password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="auth-submit-btn"
+            >
+              {loading ? (
+                'Creating Profile...'
+              ) : (
+                <>
+                  Get Started Free <ArrowRight size={15} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="auth-footer-links">
+            Already have an account?{' '}
+            <Link to="/login" className="auth-link">
+              Sign in →
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Right: Visual Protagonist (Structuring Career Profile) */}
+        <AuthVisualProtagonist mode="register" />
       </div>
     </div>
   );
