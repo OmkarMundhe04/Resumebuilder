@@ -15,7 +15,8 @@ router.get('/', auth, async (req, res, next) => {
     const applications = await Application.find({ userId: req.user.userId })
       .populate('resumeId', 'title version')
       .populate('coverLetterId', 'title')
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .lean();
 
     // Calculate metrics
     const total = applications.length;

@@ -6,10 +6,10 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AppShell from './components/layout/AppShell';
 import CustomCursor from './components/motion/CustomCursor';
 
-// Critical Path Pages (Loaded immediately)
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Register from './pages/Register';
+// Lazy-Loaded Page Components (Split into on-demand chunks)
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 
 // Lazy-Loaded Workspace Pages (Split into on-demand chunks)
 const Dashboard = lazy(() => import('./pages/Dashboard'));

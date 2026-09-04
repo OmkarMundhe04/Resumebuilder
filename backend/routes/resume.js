@@ -90,7 +90,7 @@ router.get('/', auth, async (req, res, next) => {
       filter.isArchived = false;
     }
 
-    const resumes = await Resume.find(filter).sort({ updatedAt: -1 });
+    const resumes = await Resume.find(filter).sort({ updatedAt: -1 }).lean();
 
     res.status(200).json({
       success: true,
@@ -110,7 +110,7 @@ router.get('/:id', auth, async (req, res, next) => {
     const resume = await Resume.findOne({
       _id: req.params.id,
       userId: req.user.userId
-    });
+    }).lean();
 
     if (!resume) {
       return res.status(404).json({

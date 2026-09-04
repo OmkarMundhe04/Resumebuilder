@@ -21,8 +21,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import CareerCopilotWidget from '../ai/CareerCopilotWidget';
 import BrandLogo from '../common/BrandLogo';
+
+const CareerCopilotWidget = React.lazy(() => import('../ai/CareerCopilotWidget'));
 
 const AppShell = ({ children }) => {
   const { user, logout, toggleTheme } = useAuth();
@@ -258,7 +259,9 @@ const AppShell = ({ children }) => {
         </main>
 
         {/* Global AI Career Copilot Widget */}
-        <CareerCopilotWidget />
+        <React.Suspense fallback={null}>
+          <CareerCopilotWidget />
+        </React.Suspense>
       </div>
     </div>
   );
