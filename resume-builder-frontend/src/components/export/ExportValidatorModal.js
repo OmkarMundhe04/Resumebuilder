@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, Download, X, FileText } from 'lucide-react';
 import { Button } from '../ui';
 
@@ -22,6 +22,16 @@ const ExportValidatorModal = ({ resume, format, onConfirmExport, onCancel }) => 
   });
 
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
 
   if (!resume) return null;
 
@@ -75,7 +85,15 @@ const ExportValidatorModal = ({ resume, format, onConfirmExport, onCancel }) => 
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="export-validator-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-validator-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '560px' }}>
         <div className="modal-header">
           <h3 id="export-validator-title" style={{ margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>

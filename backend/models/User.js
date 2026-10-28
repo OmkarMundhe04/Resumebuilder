@@ -51,7 +51,8 @@ const userSchema = new mongoose.Schema({
     highContrast: { type: Boolean, default: false },
     fontSize: { type: String, enum: ['normal', 'large', 'xlarge'], default: 'normal' },
     aiEnabled: { type: Boolean, default: true },
-    autoSaveInterval: { type: Number, default: 3000 } // ms
+    autoSaveInterval: { type: Number, default: 3000 }, // ms
+    careerProfileAutosave: { type: Boolean, default: true }
   }
 }, {
   timestamps: true

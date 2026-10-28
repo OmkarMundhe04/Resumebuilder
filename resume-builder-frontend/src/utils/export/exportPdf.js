@@ -1,20 +1,35 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import {
+  A4_CONSTANTS,
+  optimizeResumeLayout,
+  calculateSmartPageSlices
+} from './smartPagination';
 
 /**
- * High-Fidelity 1:1 ISO A4 PDF Exporter with Intelligent Page Break Slicing,
- * Per-Page Border Preservation, and Interactive Clickable Hyperlink Annotations.
+ * Production-Grade Smart Resume Pagination & One-Page PDF Layout Exporter
+ * 
+ * Capabilities:
+ * - Smart One-Page Optimization for undergraduate/early-career resumes
+ * - Safe typography enforcement (body font >= 10pt / 13.3px)
+ * - Safe physical page margins (0.5in - 0.75in / 48px - 72px)
+ * - Strict orphan heading protection (headings stay with first items)
+ * - Breakable item-level pagination for multi-page resumes
+ * - Interactive clickable hyperlinks mapped across all pages
+ * - Complete preview isolation with reliable style restoration
  */
 export const exportToPdf = async (targetOrResume = 'resume-preview-document', customFilename) => {
   let element = null;
   let resolvedFilename = customFilename;
+  let resumeObj = null;
 
-  // 1. Resolve DOM Element
+  // 1. Resolve DOM Element & Metadata
   if (typeof targetOrResume === 'string') {
     element = document.getElementById(targetOrResume) || document.querySelector(targetOrResume);
   } else if (targetOrResume instanceof HTMLElement) {
     element = targetOrResume;
   } else if (targetOrResume && typeof targetOrResume === 'object') {
+    resumeObj = targetOrResume;
     const name = targetOrResume?.personal?.fullName || targetOrResume?.title || 'Resume';
     if (!resolvedFilename) {
       resolvedFilename = `${name.replace(/[^a-zA-Z0-9_-]/g, '_')}_Resume.pdf`;
@@ -60,8 +75,21 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
   element.style.borderRadius = '0px';
   element.style.margin = '0';
 
+  let restoreLayoutOptimization = () => {};
+
   try {
-    // 3. Extract all links from the DOM BEFORE html2canvas rendering
+    const a4WidthMm = A4_CONSTANTS.WIDTH_MM;
+    const a4HeightMm = A4_CONSTANTS.HEIGHT_MM;
+    const a4Ratio = A4_CONSTANTS.ASPECT_RATIO; // ~1.4142
+
+    const domWidthPx = element.offsetWidth || A4_CONSTANTS.STANDARD_WIDTH_PX;
+    const maxPageDomHeightPx = Math.round(domWidthPx * a4Ratio);
+
+    // 3. Apply Smart Layout Optimization (Comfortable -> Compact -> Dense -> Multi-Page)
+    const layoutOptimization = optimizeResumeLayout(element, maxPageDomHeightPx);
+    restoreLayoutOptimization = layoutOptimization.restore || (() => {});
+
+    // 4. Extract all links from the DOM after layout optimization with exact relative coordinates
     const elemRect = element.getBoundingClientRect();
     const linkNodes = Array.from(element.querySelectorAll('a[href], [data-resume-url]'));
     const linkItems = linkNodes.map(node => {
@@ -88,19 +116,10 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
       };
     }).filter(item => item.href && item.widthPx > 0 && item.heightPx > 0);
 
-    // 4. Extract logical break candidate elements (projects, experiences, educations, headers)
-    const breakCandidates = Array.from(element.querySelectorAll(
-      '.experience-item, .project-item, .education-item, .certification-item, .publication-item, .award-item, .volunteer-item, .custom-item, .resume-section, section, h2, h3, tr'
-    )).map(node => {
-      const rect = node.getBoundingClientRect();
-      return {
-        topPx: rect.top - elemRect.top,
-        bottomPx: rect.bottom - elemRect.top,
-        heightPx: rect.height
-      };
-    }).filter(item => item.heightPx > 0);
+    // 5. Calculate Intelligent Page Slices with Item-Level Breakability & Orphan Protection
+    const pageSlices = calculateSmartPageSlices(element, maxPageDomHeightPx);
 
-    // 5. High-resolution canvas capture
+    // 6. High-resolution canvas capture
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -118,59 +137,20 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
       compress: true
     });
 
-    const a4WidthMm = 210;
-    const a4HeightMm = 297;
-    const a4Ratio = a4HeightMm / a4WidthMm; // ~1.4142
+    // Set Document Properties / Metadata for ATS parsers
+    const candidateName = resumeObj?.personal?.fullName || element.querySelector('h1')?.textContent || 'Candidate';
+    const candidateTitle = resumeObj?.personal?.title || element.querySelector('header [data-section="personal"]')?.textContent || 'Resume';
+    pdf.setProperties({
+      title: `${candidateName} - Resume`,
+      subject: `${candidateTitle} Professional Resume`,
+      author: candidateName,
+      keywords: 'Resume, Curriculum Vitae, CV, ATS-Optimized, Career',
+      creator: 'ResumeBuilder AI'
+    });
 
-    const domWidthPx = element.offsetWidth || 794;
-    const domHeightPx = element.scrollHeight;
-    const maxPageDomHeightPx = domWidthPx * a4Ratio;
-
-    // 6. Calculate intelligent slice cut points
-    const pageSlices = [];
-    let currentTopDomPx = 0;
-
-    while (currentTopDomPx < domHeightPx - 5) {
-      const remainingDomHeight = domHeightPx - currentTopDomPx;
-
-      if (remainingDomHeight <= maxPageDomHeightPx + 5) {
-        // Last page slice fits within standard A4
-        pageSlices.push({
-          topDomPx: currentTopDomPx,
-          bottomDomPx: domHeightPx,
-          heightDomPx: remainingDomHeight
-        });
-        break;
-      }
-
-      // Propose ideal A4 cutoff
-      const idealCutDomPx = currentTopDomPx + maxPageDomHeightPx;
-
-      // Find if any logical item crosses the cut boundary
-      let bestCutDomPx = idealCutDomPx;
-      const intersectingItem = breakCandidates.find(item => 
-        item.topPx < (idealCutDomPx - 15) && 
-        item.bottomPx > (idealCutDomPx - 5)
-      );
-
-      if (intersectingItem && intersectingItem.topPx > (currentTopDomPx + 100)) {
-        // Safe item break point found: break before this item
-        bestCutDomPx = intersectingItem.topPx;
-      }
-
-      const sliceHeight = bestCutDomPx - currentTopDomPx;
-      pageSlices.push({
-        topDomPx: currentTopDomPx,
-        bottomDomPx: bestCutDomPx,
-        heightDomPx: sliceHeight
-      });
-
-      currentTopDomPx = bestCutDomPx;
-    }
-
-    // 7. Render each slice onto its corresponding A4 PDF page
     const pxScale = canvas.width / domWidthPx;
 
+    // 7. Render each slice onto its corresponding A4 PDF page
     for (let i = 0; i < pageSlices.length; i++) {
       const slice = pageSlices[i];
       if (i > 0) {
@@ -183,7 +163,7 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
       // Create a clean cropped canvas for this specific page slice
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
-      pageCanvas.height = sliceHeightCanvasPx;
+      pageCanvas.height = Math.round(maxPageDomHeightPx * pxScale);
       const ctx = pageCanvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
@@ -203,7 +183,16 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
       const sliceImgData = pageCanvas.toDataURL('image/png', 1.0);
       const renderedHeightMm = (slice.heightDomPx / domWidthPx) * a4WidthMm;
 
-      pdf.addImage(sliceImgData, 'PNG', 0, 0, a4WidthMm, Math.min(renderedHeightMm, a4HeightMm), undefined, 'FAST');
+      pdf.addImage(
+        sliceImgData,
+        'PNG',
+        0,
+        0,
+        a4WidthMm,
+        Math.min(renderedHeightMm, a4HeightMm),
+        undefined,
+        'FAST'
+      );
 
       // 8. Add interactive clickable links on this page
       const pageIndex = i + 1;
@@ -225,8 +214,19 @@ export const exportToPdf = async (targetOrResume = 'resume-preview-document', cu
     }
 
     pdf.save(resolvedFilename);
-    return true;
+    return {
+      success: true,
+      filename: resolvedFilename,
+      pageCount: pageSlices.length,
+      densityProfile: layoutOptimization.profile,
+      isSinglePage: pageSlices.length === 1
+    };
   } finally {
+    // Restore layout optimization styles
+    try {
+      restoreLayoutOptimization();
+    } catch {}
+
     // Restore original element styles
     element.style.transform = originalTransform;
     element.style.boxShadow = originalBoxShadow;

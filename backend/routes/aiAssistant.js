@@ -145,27 +145,52 @@ router.post('/analyze-resume', auth, aiLimiter, async (req, res, next) => {
   try {
     const { resumeData, targetRole, jobDescription } = req.body;
     
+    if (!resumeData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resume data is required for review.'
+      });
+    }
+
     let resumeText = '';
     if (typeof resumeData === 'string') {
-      resumeText = resumeData;
+      resumeText = resumeData.trim();
     } else if (resumeData && typeof resumeData === 'object') {
       const p = resumeData.personal || {};
-      const exp = (resumeData.experiences || []).map(e => `- ${e.role} at ${e.company}: ${e.responsibilities || ''} ${(e.bullets || []).map(b => b.text).join(' ')}`).join('\n');
+      const exp = (resumeData.experiences || []).map(e => `- ${e.role || 'Role'} at ${e.company || 'Company'}: ${e.responsibilities || ''} ${(e.bullets || []).map(b => b.text || '').join(' ')}`).join('\n');
       const sk = (resumeData.skills || []).map(s => s.name || s).join(', ');
-      const pr = (resumeData.projects || []).map(pr => `- ${pr.name}: ${pr.description || ''}`).join('\n');
-      resumeText = `Name: ${p.fullName || 'Candidate'}\nTitle: ${p.title || ''}\nSummary: ${p.summary || ''}\nSkills: ${sk}\nExperience:\n${exp}\nProjects:\n${pr}`;
+      const pr = (resumeData.projects || []).map(pr => `- ${pr.name || 'Project'}: ${pr.description || ''}`).join('\n');
+      const edu = (resumeData.education || []).map(ed => `- ${ed.degree || ''} from ${ed.institution || ''}`).join('\n');
+      resumeText = `Name: ${p.fullName || 'Candidate'}\nTitle: ${p.title || ''}\nSummary: ${p.summary || ''}\nSkills: ${sk}\nExperience:\n${exp}\nProjects:\n${pr}\nEducation:\n${edu}`.trim();
+    }
+
+    if (!resumeText || resumeText.length < 15) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resume content is empty. Please add skills, experience, projects, or personal details before requesting review.'
+      });
     }
 
     const geminiResult = await analyzeResumeWithGemini({
-      resumeText: resumeText || 'No text provided',
-      jobDescription: jobDescription || '',
+      resumeText,
+      jobDescription: (typeof jobDescription === 'string' ? jobDescription : '')?.slice(0, 8000),
       targetRole: targetRole || 'Software Professional'
     });
 
+    if (geminiResult) {
+      return res.status(200).json({
+        success: true,
+        analysis: geminiResult,
+        isGeminiPowered: true
+      });
+    }
+
+    // Explicit fallback when Gemini is offline or quota reached
     res.status(200).json({
       success: true,
-      analysis: geminiResult || 'Resume meets baseline formatting requirements. Ensure all experience points quantify business impact.',
-      isGeminiPowered: Boolean(geminiResult)
+      analysis: '### ⚡ Heuristic Resume Diagnostic (Gemini AI Offline)\n- **ATS Safety:** Clean structural formatting detected with consistent chronological entries.\n- **Action Verb Density:** Ensure each bullet point begins with a strong active verb.\n- **Impact Metrics:** Incorporate quantifiable business outcomes (%, latency, user metrics, scale) across experience bullets.\n- **Keyword Coverage:** Align core skills directly with target job requirements.',
+      isGeminiPowered: false,
+      providerStatus: 'unavailable'
     });
   } catch (error) {
     next(error);

@@ -210,33 +210,46 @@ async function runTests() {
     }
     assert(clRes.status === 200 && clRes.data?.fullLetter, 'POST /cover-letter/generate generates grounded cover letter with target company');
 
-    // 12. Google OAuth Authentication Flow
-    console.log('\n12. Testing Google OAuth Authentication Flow...');
-    const googleMockUser = {
-      profile: {
-        email: `google_${Date.now()}@example.com`,
-        name: 'Google Engineer',
-        sub: `google_sub_${Date.now()}`,
-        picture: 'https://lh3.googleusercontent.com/a/mock-avatar.png'
-      }
-    };
-    const googleAuthRes = await request('/auth/google', {
+    // 12. Google OAuth Security & Authentication Boundary Verification
+    console.log('\n12. Testing Google OAuth Authentication Boundaries & Production Security...');
+    
+    // Test A: Arbitrary profile objects must NEVER be accepted
+    const arbitraryProfileRes = await request('/auth/google', {
       method: 'POST',
-      body: googleMockUser
+      body: {
+        profile: {
+          email: `attacker_${Date.now()}@example.com`,
+          name: 'Fake Identity',
+          sub: '12345'
+        }
+      }
     });
     assert(
-      googleAuthRes.status === 200 && googleAuthRes.data.token && googleAuthRes.data.user.email === googleMockUser.profile.email,
-      'POST /auth/google creates new user and returns valid session token'
+      arbitraryProfileRes.status === 400,
+      'POST /auth/google strictly rejects client-supplied profile objects without valid credential'
     );
 
-    // Verify returning user
-    const googleReturnRes = await request('/auth/google', {
+    // Test B: Unverified/bogus JWT credentials must be rejected by Google verifier
+    const bogusTokenRes = await request('/auth/google', {
       method: 'POST',
-      body: googleMockUser
+      body: { credential: 'unverified.bogus.jwt.payload' }
     });
     assert(
-      googleReturnRes.status === 200 && googleReturnRes.data.token,
-      'POST /auth/google successfully logs in returning Google user'
+      bogusTokenRes.status === 400 || bogusTokenRes.status === 401,
+      'POST /auth/google strictly rejects unverified/forged Google ID tokens'
+    );
+
+    // Test C: Standard authentication session login verification
+    const loginRes = await request('/auth/login', {
+      method: 'POST',
+      body: {
+        email: userAData.email,
+        password: userAData.password
+      }
+    });
+    assert(
+      loginRes.status === 200 && loginRes.data.token && loginRes.data.user.email === userAData.email,
+      'POST /auth/login successfully logs in and returns valid JWT session token'
     );
 
     console.log('\n====================================================');

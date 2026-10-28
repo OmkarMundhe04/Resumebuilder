@@ -99,6 +99,10 @@ describe('Resume AI Assistant Frontend Component Tests', () => {
         />
       );
 
+      await waitFor(() => {
+        expect(screen.getByText('Test')).toBeInTheDocument();
+      });
+
       const cancelBtn = screen.getByText(/Cancel/i);
       fireEvent.click(cancelBtn);
 

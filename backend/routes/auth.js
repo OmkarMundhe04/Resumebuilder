@@ -18,61 +18,43 @@ const signToken = (userId) => {
 // Helper to verify Google ID token with Google tokeninfo endpoint
 const verifyGoogleToken = (idToken) => {
   return new Promise((resolve, reject) => {
-    https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, (res) => {
+    if (!idToken || typeof idToken !== 'string') {
+      return reject(new Error('Invalid Google token format'));
+    }
+
+    const request = https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, (res) => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
           if (res.statusCode === 200 && parsed.email) {
-            resolve({
+            // Validate Google OAuth Client ID if configured
+            if (process.env.GOOGLE_CLIENT_ID && parsed.aud && parsed.aud !== process.env.GOOGLE_CLIENT_ID) {
+              return reject(new Error('Google token audience mismatch'));
+            }
+            return resolve({
               email: parsed.email,
               name: parsed.name || parsed.given_name || parsed.email.split('@')[0],
               sub: parsed.sub,
               picture: parsed.picture || ''
             });
-          } else {
-            // Fallback to local JWT decode if signature check not strictly needed in dev
-            const decoded = jwt.decode(idToken);
-            if (decoded && decoded.email) {
-              resolve({
-                email: decoded.email,
-                name: decoded.name || decoded.given_name || decoded.email.split('@')[0],
-                sub: decoded.sub || decoded.user_id,
-                picture: decoded.picture || ''
-              });
-            } else {
-              reject(new Error(parsed.error_description || 'Invalid Google token'));
-            }
           }
+
+          return reject(new Error(parsed.error_description || 'Invalid or unverified Google token'));
         } catch (e) {
-          // If token format can still be decoded
-          const decoded = jwt.decode(idToken);
-          if (decoded && decoded.email) {
-            resolve({
-              email: decoded.email,
-              name: decoded.name || decoded.given_name || decoded.email.split('@')[0],
-              sub: decoded.sub || decoded.user_id,
-              picture: decoded.picture || ''
-            });
-          } else {
-            reject(e);
-          }
+          return reject(new Error('Failed to parse Google verification response'));
         }
       });
-    }).on('error', (err) => {
-      // Offline fallback: try local decode
-      const decoded = jwt.decode(idToken);
-      if (decoded && decoded.email) {
-        resolve({
-          email: decoded.email,
-          name: decoded.name || decoded.given_name || decoded.email.split('@')[0],
-          sub: decoded.sub || decoded.user_id,
-          picture: decoded.picture || ''
-        });
-      } else {
-        reject(err);
-      }
+    });
+
+    request.on('error', (err) => {
+      return reject(new Error(`Google verification request failed: ${err.message}`));
+    });
+
+    request.setTimeout(10000, () => {
+      request.destroy();
+      return reject(new Error('Google verification request timed out'));
     });
   });
 };
@@ -82,19 +64,29 @@ const verifyGoogleToken = (idToken) => {
 // @access  Public
 router.post('/google', authLimiter, async (req, res, next) => {
   try {
-    const { credential, profile } = req.body;
+    const { credential } = req.body;
+
+    if (!credential || typeof credential !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Google authentication failed: valid credential token is required.'
+      });
+    }
 
     let googleUser = null;
-    if (credential) {
+    try {
       googleUser = await verifyGoogleToken(credential);
-    } else if (profile && profile.email) {
-      googleUser = profile;
+    } catch (verifyErr) {
+      return res.status(401).json({
+        success: false,
+        message: `Google authentication failed: ${verifyErr.message}`
+      });
     }
 
     if (!googleUser || !googleUser.email) {
       return res.status(400).json({
         success: false,
-        message: 'Google authentication failed: no valid credential provided.'
+        message: 'Google authentication failed: no valid verified email provided.'
       });
     }
 
@@ -339,7 +331,7 @@ router.get('/me', auth, async (req, res, next) => {
 // @access  Private
 router.put('/preferences', auth, async (req, res, next) => {
   try {
-    const { theme, reducedMotion, highContrast, fontSize, aiEnabled, autoSaveInterval } = req.body;
+    const { theme, reducedMotion, highContrast, fontSize, aiEnabled, autoSaveInterval, careerProfileAutosave } = req.body;
     
     const updates = {};
     if (theme !== undefined) updates['preferences.theme'] = theme;
@@ -348,6 +340,7 @@ router.put('/preferences', auth, async (req, res, next) => {
     if (fontSize !== undefined) updates['preferences.fontSize'] = fontSize;
     if (aiEnabled !== undefined) updates['preferences.aiEnabled'] = aiEnabled;
     if (autoSaveInterval !== undefined) updates['preferences.autoSaveInterval'] = autoSaveInterval;
+    if (careerProfileAutosave !== undefined) updates['preferences.careerProfileAutosave'] = careerProfileAutosave;
 
     const user = await User.findByIdAndUpdate(
       req.user.userId,

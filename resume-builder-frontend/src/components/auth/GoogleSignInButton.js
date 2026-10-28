@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { X, ExternalLink, Sparkles } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -32,9 +32,11 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-  const isConfigured = Boolean(clientId && clientId.includes('.apps.googleusercontent.com') && !clientId.includes('demo-resumebuilder'));
+  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '976231298088-t12vspabm2os17ptoaqq821bbj5qvu1v.apps.googleusercontent.com';
+  const isConfigured = Boolean(clientId && clientId.includes('.apps.googleusercontent.com'));
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
   const handleSuccess = async (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -56,29 +58,27 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
   };
 
   const handleError = () => {
-    // If client ID is invalid or not yet configured on Google Cloud
+    // Fired when Google Identity Services encounters origin_mismatch or configuration error
     setShowConfigModal(true);
   };
 
-  const handleDevInstantLogin = async (customEmail = null) => {
-    setLoading(true);
-    try {
-      const testEmail = customEmail || `omkar.google_${Math.floor(100 + Math.random() * 900)}@gmail.com`;
-      const data = await googleLogin(null, {
-        email: testEmail,
-        name: 'Omkar Mundhe (Google)',
-        sub: `google_oauth_${Date.now()}`,
-        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
-      });
-      addToast(data.message || 'Signed in with Google test account!', 'success');
-      setShowConfigModal(false);
-      navigate(redirectTo, { replace: true });
-    } catch (err) {
-      addToast(err.message || 'Google sign-in failed.', 'error');
-    } finally {
-      setLoading(false);
+  const handleCopyOrigin = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentOrigin);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showConfigModal) {
+        setShowConfigModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showConfigModal]);
 
   return (
     <div className="google-auth-container">
@@ -112,9 +112,12 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
         </div>
       )}
 
-      {/* Google OAuth Setup & Dev Helper Modal */}
+      {/* Google OAuth Setup & Origin Mismatch Resolver Modal */}
       {showConfigModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="google-auth-modal-title"
           style={{
             position: 'fixed',
             inset: 0,
@@ -133,7 +136,7 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
               backgroundColor: '#121216',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '16px',
-              maxWidth: '520px',
+              maxWidth: '540px',
               width: '100%',
               padding: '1.75rem',
               color: '#f4f4f6',
@@ -144,10 +147,13 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <GoogleIcon />
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>Google Sign-In Setup</h3>
+                <h3 id="google-auth-modal-title" style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>
+                  Google OAuth Origin Authorization
+                </h3>
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}
+                aria-label="Close modal"
                 style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
               >
                 <X size={18} />
@@ -155,59 +161,69 @@ const GoogleSignInButton = ({ redirectTo = '/dashboard', textType = 'continue_wi
             </div>
 
             <p style={{ fontSize: '0.875rem', color: '#a1a1aa', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-              To enable real Google Single Sign-On in production or local development:
+              If Google displays <strong style={{ color: '#ef4444' }}>Error 400: origin_mismatch</strong>, Google OAuth requires your current browser origin to be listed in Google Cloud Console.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#09090b', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#71717a', fontWeight: 600 }}>Current Origin to Authorize</div>
+                  <code style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>{currentOrigin}</code>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyOrigin}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.75rem',
+                    borderRadius: '6px',
+                    backgroundColor: copied ? '#059669' : '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 500
+                  }}
+                >
+                  {copied ? 'Copied!' : 'Copy Origin'}
+                </button>
+              </div>
+
               <div style={{ display: 'flex', gap: '8px', fontSize: '0.8125rem' }}>
                 <span style={{ color: '#3b82f6', fontWeight: 700 }}>1.</span>
                 <span>
-                  Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>Google Cloud Console → Credentials <ExternalLink size={11} style={{ display: 'inline' }} /></a>
+                  Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>Google Cloud Console → Credentials <ExternalLink size={11} style={{ display: 'inline' }} /></a>
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', fontSize: '0.8125rem' }}>
                 <span style={{ color: '#3b82f6', fontWeight: 700 }}>2.</span>
-                <span>Create <strong>OAuth 2.0 Client ID</strong> (Application type: <strong>Web application</strong>).</span>
+                <span>Click OAuth 2.0 Web Client: <code style={{ fontSize: '0.75rem', color: '#a5f3fc' }}>{clientId.slice(0, 20)}...</code></span>
               </div>
               <div style={{ display: 'flex', gap: '8px', fontSize: '0.8125rem' }}>
                 <span style={{ color: '#3b82f6', fontWeight: 700 }}>3.</span>
-                <span>Under <em>Authorized JavaScript origins</em>, add <code>http://localhost:3000</code>.</span>
+                <span>Under <strong>Authorized JavaScript origins</strong>, click <strong>+ ADD URI</strong> and paste: <code style={{ color: '#38bdf8' }}>{currentOrigin}</code></span>
               </div>
               <div style={{ display: 'flex', gap: '8px', fontSize: '0.8125rem' }}>
                 <span style={{ color: '#3b82f6', fontWeight: 700 }}>4.</span>
-                <span>Paste the Client ID in <code>resume-builder-frontend/.env</code> as:</span>
+                <span>Click <strong>Save</strong>. (Google propagates changes within 1–5 minutes).</span>
               </div>
-              <code style={{ fontSize: '0.75rem', background: '#09090b', padding: '6px 10px', borderRadius: '6px', color: '#38bdf8', wordBreak: 'break-all' }}>
-                REACT_APP_GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
-              </code>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ fontSize: '0.75rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                Instant Dev Testing
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
                 type="button"
-                onClick={() => handleDevInstantLogin('omkarmundhe04@gmail.com')}
-                disabled={loading}
+                onClick={() => setShowConfigModal(false)}
                 style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 600,
+                  padding: '0.625rem 1.25rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  color: '#fff',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
                   fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
+                  fontWeight: 500,
+                  cursor: 'pointer'
                 }}
               >
-                <Sparkles size={16} />
-                {loading ? 'Authenticating...' : 'Sign in as omkarmundhe04@gmail.com (Dev Mock)'}
+                Close
               </button>
             </div>
           </div>

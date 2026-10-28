@@ -376,3 +376,71 @@
   }
 }
 
+/* ==========================================================================
+   CANONICAL RESUME DENSITY SYSTEM TOKENS & PROFILES
+   ========================================================================== */
+.canonical-resume {
+  --resume-page-padding-top: 48px;
+  --resume-page-padding-bottom: 48px;
+  --resume-page-padding-x: 48px;
+  --resume-section-gap: 14px;
+  --resume-header-gap: 16px;
+  --resume-item-gap: 8px;
+  --resume-heading-gap: 6px;
+  --resume-bullet-gap: 3px;
+  --resume-line-height: 1.45;
+  --resume-body-font-size: 10.5pt;
+  --resume-h1-font-size: 20pt;
+  --resume-h2-font-size: 11pt;
+  --resume-meta-font-size: 9pt;
+  box-sizing: border-box;
+}
+
+.canonical-resume.density-comfortable {
+  --resume-page-padding-top: 48px;
+  --resume-page-padding-bottom: 48px;
+  --resume-page-padding-x: 48px;
+  --resume-section-gap: 14px;
+  --resume-header-gap: 16px;
+  --resume-item-gap: 8px;
+  --resume-heading-gap: 6px;
+  --resume-bullet-gap: 3px;
+  --resume-line-height: 1.45;
+  --resume-body-font-size: 10.5pt;
+  --resume-h1-font-size: 20pt;
+  --resume-h2-font-size: 11pt;
+  --resume-meta-font-size: 9pt;
+}
+
+.canonical-resume.density-compact {
+  --resume-page-padding-top: 48px;
+  --resume-page-padding-bottom: 48px;
+  --resume-page-padding-x: 48px;
+  --resume-section-gap: 10px;
+  --resume-header-gap: 12px;
+  --resume-item-gap: 6px;
+  --resume-heading-gap: 4px;
+  --resume-bullet-gap: 2px;
+  --resume-line-height: 1.38;
+  --resume-body-font-size: 10.25pt;
+  --resume-h1-font-size: 19pt;
+  --resume-h2-font-size: 10.5pt;
+  --resume-meta-font-size: 8.5pt;
+}
+
+.canonical-resume.density-dense {
+  --resume-page-padding-top: 48px;
+  --resume-page-padding-bottom: 48px;
+  --resume-page-padding-x: 48px;
+  --resume-section-gap: 8px;
+  --resume-header-gap: 10px;
+  --resume-item-gap: 4px;
+  --resume-heading-gap: 3px;
+  --resume-bullet-gap: 1.5px;
+  --resume-line-height: 1.34;
+  --resume-body-font-size: 10.0pt;
+  --resume-h1-font-size: 18pt;
+  --resume-h2-font-size: 10pt;
+  --resume-meta-font-size: 8.25pt;
+}
+

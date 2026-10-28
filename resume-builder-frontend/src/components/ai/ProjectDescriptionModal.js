@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles,
   CheckCircle2,
@@ -24,6 +24,23 @@ const ProjectDescriptionModal = ({
   const [error, setError] = useState(null);
   const [variants, setVariants] = useState(null);
   const [isGeminiPowered, setIsGeminiPowered] = useState(false);
+  const isMountedRef = useRef(true);
+  const prevActiveElement = useRef(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      prevActiveElement.current = document.activeElement;
+    } else if (prevActiveElement.current && prevActiveElement.current.focus) {
+      prevActiveElement.current.focus();
+    }
+  }, [isOpen]);
 
   const generateDescriptions = useCallback(async () => {
     if (!project.name?.trim() && (!project.technologies || project.technologies.length === 0) && !project.description?.trim()) {
@@ -44,6 +61,8 @@ const ProjectDescriptionModal = ({
         jobDescription: jobDescription || ''
       });
 
+      if (!isMountedRef.current) return;
+
       if (res.data.success && res.data.variants) {
         setVariants(res.data.variants);
         setIsGeminiPowered(Boolean(res.data.isGeminiPowered));
@@ -51,9 +70,12 @@ const ProjectDescriptionModal = ({
         setError(res.data.message || 'Failed to generate description variants.');
       }
     } catch (err) {
+      if (!isMountedRef.current) return;
       setError(err.response?.data?.message || err.message || 'Failed to generate descriptions. Please try again.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, targetRole, jobDescription]);
@@ -64,6 +86,15 @@ const ProjectDescriptionModal = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -107,7 +138,15 @@ const ProjectDescriptionModal = ({
   ].filter(v => Boolean(v.text)) : [];
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="project-desc-modal-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="project-desc-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '680px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div className="modal-header">

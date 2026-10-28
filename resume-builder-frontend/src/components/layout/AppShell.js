@@ -176,7 +176,7 @@ const AppShell = ({ children }) => {
       </aside>
 
       {/* Main Workspace Layout */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100vh', overflow: 'hidden' }}>
         {/* Global Header */}
         <header
           className="app-header no-print"
@@ -254,7 +254,7 @@ const AppShell = ({ children }) => {
         )}
 
         {/* Content Area */}
-        <main id="main-content" style={{ flex: 1, padding: '0', overflowY: 'auto' }}>
+        <main id="main-content" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {children}
         </main>
 

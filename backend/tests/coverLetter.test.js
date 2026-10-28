@@ -92,6 +92,60 @@ async function testCoverLetterFlow() {
     console.log('⚠️ Gemini call returned null (testing fallback)...');
   }
 
+  // --- Test 2: Anti-Hallucination & Multi-Resume Distinction Test ---
+  console.log('\n--- Test 2: Anti-Hallucination & Cross-Resume Data Isolation ---');
+  const distinctCandidateB = {
+    fullName: 'Aarav Chen',
+    title: 'Quantum Systems Researcher',
+    location: 'Cambridge, MA',
+    hasProfessionalExperience: true,
+    education: [
+      {
+        degree: 'M.S. in Applied Physics',
+        institution: 'Quantum Research Institute',
+        graduationDate: '2023'
+      }
+    ],
+    skills: [
+      { name: 'Qiskit', category: 'Technical', proficiency: 'Expert' },
+      { name: 'Rust', category: 'Technical', proficiency: 'Advanced' },
+      { name: 'Quantum Error Correction', category: 'Domain', proficiency: 'Advanced' }
+    ],
+    projects: [
+      {
+        name: 'Q-Sim Quantum Lattice Simulator',
+        technologies: ['Rust', 'Qiskit', 'WebAssembly'],
+        description: 'Engineered high-speed simulator for 64-qubit error correction lattices.'
+      }
+    ],
+    experiences: [
+      {
+        role: 'Research Fellow',
+        company: 'ColdQuanta Lab',
+        startDate: '2023-01',
+        isCurrent: true,
+        bullets: [{ text: 'Benchmarked gate fidelity across topological superconducting qubits.' }]
+      }
+    ]
+  };
+
+  const resultB = await generateCoverLetterWithGemini({
+    candidateEvidence: distinctCandidateB,
+    targetRole: 'Quantum Hardware Scientist',
+    company: 'IonQ Photonics',
+    hiringManager: 'Dr. Marcus Vance',
+    jobDescription: 'Seeking quantum computing researcher with expertise in Qiskit, Rust, and quantum error correction lattices.',
+    tone: 'technical'
+  });
+
+  if (resultB) {
+    const letterB = resultB.coverLetter;
+    const usesCandidateBFacts = letterB.includes('Q-Sim') || letterB.includes('Qiskit') || letterB.includes('ColdQuanta') || letterB.includes('Quantum');
+    const noStaleCandidateAFacts = !letterB.includes('Ration Shop') && !letterB.includes('India Traffic') && !letterB.includes('Pune Institute');
+    console.log('Verification: Letter B accurately references Candidate B unique facts:', usesCandidateBFacts ? '✓ PASS' : '❌ FAIL');
+    console.log('Verification: Letter B has ZERO cross-contamination from Candidate A:', noStaleCandidateAFacts ? '✓ PASS' : '❌ FAIL');
+  }
+
   await mongoose.disconnect();
 }
 

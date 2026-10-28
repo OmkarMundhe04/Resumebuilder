@@ -31,6 +31,16 @@ const ShareResumeModal = ({ resume, isOpen, onClose }) => {
     }
   }, [isOpen, resume?._id, fetchMyLinks]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !resume) return null;
 
   const handleCreateShareLink = async () => {
@@ -77,7 +87,15 @@ const ShareResumeModal = ({ resume, isOpen, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="share-resume-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-resume-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '620px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

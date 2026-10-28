@@ -33,6 +33,7 @@
 .split-pane-workspace.is-dragging .split-pane-left,
 .split-pane-workspace.is-dragging .split-pane-right {
   transition: none !important; /* Instant 1:1 tracking during active drag */
+  pointer-events: none !important; /* Prevents text selection / iframe interference while resizing */
 }
 
 .split-pane-left {
@@ -63,15 +64,15 @@
 
 /* Gutter Divider */
 .split-pane-gutter {
-  width: 16px;
-  margin: 0 -2px;
+  width: 10px;
+  margin: 0;
   height: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: col-resize;
-  z-index: 20;
+  z-index: 10;
   flex-shrink: 0;
   outline: none;
   touch-action: none;

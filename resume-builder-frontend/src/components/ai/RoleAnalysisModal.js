@@ -106,6 +106,16 @@ const RoleAnalysisModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activeTab]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSaveRoleAndJd = () => {
@@ -161,7 +171,15 @@ const RoleAnalysisModal = ({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="role-analysis-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="role-analysis-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '820px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div className="modal-header">
@@ -602,8 +620,8 @@ const RoleAnalysisModal = ({
 
         {/* Footer */}
         <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            {isGeminiPowered ? 'Powered by Google Gemini 2.5' : 'Verified Rule-Based Diagnostic'}
+          <span style={{ fontSize: '0.72rem', color: isGeminiPowered ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: isGeminiPowered ? 600 : 400 }}>
+            {isGeminiPowered ? '✨ Powered by Google Gemini AI' : 'Verified Rule-Based Diagnostic'}
           </span>
           <button type="button" onClick={onClose} className="btn btn-primary btn-sm">
             Done

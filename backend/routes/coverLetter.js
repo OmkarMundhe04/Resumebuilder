@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const CoverLetter = require('../models/CoverLetter');
 const CareerProfile = require('../models/CareerProfile');
+const Resume = require('../models/Resume');
 const auth = require('../middleware/auth');
 const { aiLimiter } = require('../middleware/security');
 
@@ -49,22 +50,23 @@ router.get('/:id', auth, async (req, res, next) => {
 
 const { generateCoverLetterWithGemini } = require('../utils/geminiService');
 
-// Helper: Extract structured candidate evidence from CareerProfile
-const buildCandidateEvidence = (profile, userName = 'Candidate') => {
-  const experiences = profile?.experiences || [];
-  const education = profile?.education || [];
-  const skills = profile?.skills || [];
-  const projects = profile?.projects || [];
-  const certifications = profile?.certifications || [];
-  const awards = profile?.awards || [];
-  const publications = profile?.publications || [];
-  const volunteer = profile?.volunteer || [];
+// Helper: Extract structured candidate evidence from Resume (primary when selected) and/or CareerProfile (fallback)
+const buildCandidateEvidence = (profile, resume, userName = 'Candidate') => {
+  const experiences = (resume?.experiences?.length ? resume.experiences : profile?.experiences) || [];
+  const education = (resume?.education?.length ? resume.education : profile?.education) || [];
+  const skills = (resume?.skills?.length ? resume.skills : profile?.skills) || [];
+  const projects = (resume?.projects?.length ? resume.projects : profile?.projects) || [];
+  const certifications = (resume?.certifications?.length ? resume.certifications : profile?.certifications) || [];
+  const awards = (resume?.awards?.length ? resume.awards : profile?.awards) || [];
+  const publications = (resume?.publications?.length ? resume.publications : profile?.publications) || [];
+  const volunteer = (resume?.volunteer?.length ? resume.volunteer : profile?.volunteer) || [];
+  const personal = (resume?.personal?.fullName ? resume.personal : profile?.personal) || {};
 
   return {
-    fullName: profile?.personal?.fullName || userName,
-    title: profile?.personal?.title || '',
-    location: profile?.personal?.location || '',
-    summary: profile?.personal?.summary || '',
+    fullName: personal.fullName || userName,
+    title: personal.title || '',
+    location: personal.location || '',
+    summary: personal.summary || '',
     hasProfessionalExperience: experiences.length > 0,
     education: education.map(e => ({
       degree: e.degree || '',
@@ -76,24 +78,24 @@ const buildCandidateEvidence = (profile, userName = 'Candidate') => {
       honors: Array.isArray(e.honors) ? e.honors : (e.honors ? [e.honors] : [])
     })),
     skills: skills.map(s => ({
-      name: s.name || '',
+      name: s.name || (typeof s === 'string' ? s : ''),
       category: s.category || 'Technical',
       proficiency: s.proficiency || 'Advanced'
-    })),
+    })).filter(s => Boolean(s.name)),
     projects: projects.map(p => ({
       name: p.name || '',
       role: p.role || '',
       technologies: Array.isArray(p.technologies) ? p.technologies : (p.technologies ? [p.technologies] : []),
       description: p.description || '',
       outcome: p.outcome || '',
-      highlights: (p.bullets || []).map(b => b.text).filter(Boolean)
+      highlights: (p.bullets || []).map(b => b.text || b).filter(Boolean)
     })),
     experiences: experiences.map(e => ({
       company: e.company || '',
       role: e.role || '',
       dates: `${e.startDate || ''} – ${e.isCurrent ? 'Present' : (e.endDate || '')}`,
       responsibilities: e.responsibilities || '',
-      highlights: (e.bullets || []).map(b => b.text).filter(Boolean)
+      highlights: (e.bullets || []).map(b => b.text || b).filter(Boolean)
     })),
     certifications: certifications.map(c => ({
       name: c.name || '',
@@ -202,16 +204,51 @@ router.post('/generate', auth, aiLimiter, async (req, res, next) => {
       hiringManager,
       tone = 'confident',
       length = 'Standard',
-      jobDescription = ''
+      jobDescription = '',
+      resumeId
     } = req.body;
 
-    const targetCompany = company || 'your organization';
-    const targetRole = jobTitle || position || 'Software Engineer';
-    const targetManager = hiringManager || recipientName || '';
+    const targetRole = (jobTitle || position || '').trim();
+    const targetCompany = (company || '').trim();
+    const targetManager = (hiringManager || recipientName || '').trim();
 
-    // 1. Fetch user's Career Profile (Truth DB)
+    if (!targetRole || !targetCompany) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both target role and company name to generate a tailored cover letter.'
+      });
+    }
+
+    if (jobDescription && jobDescription.length > 8000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job description is too long (maximum 8,000 characters). Please provide the key requirements.'
+      });
+    }
+
+    // 1. Fetch user's Career Profile and/or active Resume (Truth DB)
     const profile = await CareerProfile.findOne({ userId: req.user.userId });
-    const candidateEvidence = buildCandidateEvidence(profile, req.user.name);
+    let resume = null;
+    if (resumeId) {
+      resume = await Resume.findOne({ _id: resumeId, userId: req.user.userId });
+    }
+    if (!resume) {
+      resume = await Resume.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    }
+
+    const candidateEvidence = buildCandidateEvidence(profile, resume, req.user.name);
+
+    const totalEvidencePoints = (candidateEvidence.experiences?.length || 0) +
+      (candidateEvidence.education?.length || 0) +
+      (candidateEvidence.skills?.length || 0) +
+      (candidateEvidence.projects?.length || 0);
+
+    if (totalEvidencePoints === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No career history found. Please add experience, education, projects, or skills to your resume or career profile first.'
+      });
+    }
 
     // 2. Call Gemini AI with candidate evidence & job parameters
     let aiResult = await generateCoverLetterWithGemini({
@@ -219,11 +256,11 @@ router.post('/generate', auth, aiLimiter, async (req, res, next) => {
       targetRole,
       company: targetCompany,
       hiringManager: targetManager,
-      jobDescription,
+      jobDescription: (jobDescription || '').trim(),
       tone
     });
 
-    let isGeminiPowered = Boolean(aiResult);
+    const isGeminiPowered = Boolean(aiResult);
 
     // 3. Fallback if Gemini fails or is offline
     if (!aiResult) {
@@ -232,7 +269,7 @@ router.post('/generate', auth, aiLimiter, async (req, res, next) => {
         targetRole,
         company: targetCompany,
         hiringManager: targetManager,
-        jobDescription
+        jobDescription: (jobDescription || '').trim()
       });
     }
 

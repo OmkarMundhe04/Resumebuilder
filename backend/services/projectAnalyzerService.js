@@ -26,6 +26,7 @@ function isSafePublicUrl(urlString) {
       hostname === '127.0.0.1' ||
       hostname === '0.0.0.0' ||
       hostname === '::1' ||
+      hostname === '[::1]' ||
       hostname.endsWith('.local') ||
       hostname.endsWith('.internal') ||
       /^10\./.test(hostname) ||
@@ -294,6 +295,12 @@ async function analyzeProject({
 
   if (liveUrl) {
     liveEvidence = await fetchLiveUrlEvidence(liveUrl);
+    if (liveEvidence && liveEvidence.error === 'UNSAFE_URL') {
+      return {
+        success: false,
+        message: liveEvidence.message || 'The provided live URL is not a valid or accessible public web address.'
+      };
+    }
   }
 
   // Check if we have at least some data to analyze

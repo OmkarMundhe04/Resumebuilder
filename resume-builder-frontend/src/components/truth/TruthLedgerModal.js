@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertTriangle, Shield, X, Save } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
@@ -13,6 +13,16 @@ const TruthLedgerModal = ({ resume, onUpdateResume, isOpen, onClose }) => {
     metric: '',
     status: 'VERIFIED'
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !resume) return null;
 
@@ -79,7 +89,15 @@ const TruthLedgerModal = ({ resume, onUpdateResume, isOpen, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="truth-ledger-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="truth-ledger-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '850px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UploadCloud, CheckCircle2, X, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -8,6 +8,16 @@ const ResumeImporterModal = ({ isOpen, onClose, onImportSuccess }) => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -47,7 +57,15 @@ const ResumeImporterModal = ({ isOpen, onClose, onImportSuccess }) => {
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="resume-importer-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resume-importer-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '700px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

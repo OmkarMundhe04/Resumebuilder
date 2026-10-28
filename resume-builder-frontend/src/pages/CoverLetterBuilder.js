@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Copy, Printer, Trash2, RotateCcw } from 'lucide-react';
+import { Sparkles, Copy, Printer, Trash2, RotateCcw, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 import PageTransition from '../components/motion/PageTransition';
@@ -23,6 +23,8 @@ const CoverLetterBuilder = () => {
   const savedDraft = getDraft(STORAGE_KEYS.COVER_LETTER_DRAFT, {});
 
   const [profile, setProfile] = useState(null);
+  const [resumes, setResumes] = useState([]);
+  const [selectedResumeId, setSelectedResumeId] = useState(savedDraft?.selectedResumeId || '');
   const [jobTitle, setJobTitle] = useState(savedDraft?.jobTitle || '');
   const [company, setCompany] = useState(savedDraft?.company || '');
   const [hiringManager, setHiringManager] = useState(savedDraft?.hiringManager || '');
@@ -31,6 +33,8 @@ const CoverLetterBuilder = () => {
   const [generatedLetter, setGeneratedLetter] = useState(savedDraft?.generatedLetter || '');
   const [quality, setQuality] = useState(savedDraft?.quality || null);
   const [matchedSkills, setMatchedSkills] = useState(savedDraft?.matchedSkills || []);
+  const [isGeminiPowered, setIsGeminiPowered] = useState(savedDraft?.isGeminiPowered || false);
+  const [generationError, setGenerationError] = useState(null);
   const [recentHistory, setRecentHistory] = useState(() => getHistory(STORAGE_KEYS.COVER_LETTER_HISTORY));
   const [loading, setLoading] = useState(false);
   const printRef = useRef();
@@ -38,6 +42,7 @@ const CoverLetterBuilder = () => {
   // Sync draft to localStorage on any field or live editor change
   useEffect(() => {
     saveDraft(STORAGE_KEYS.COVER_LETTER_DRAFT, {
+      selectedResumeId,
       jobTitle,
       company,
       hiringManager,
@@ -45,23 +50,35 @@ const CoverLetterBuilder = () => {
       tone,
       generatedLetter,
       quality,
-      matchedSkills
+      matchedSkills,
+      isGeminiPowered
     });
-  }, [jobTitle, company, hiringManager, jobDescription, tone, generatedLetter, quality, matchedSkills]);
+  }, [selectedResumeId, jobTitle, company, hiringManager, jobDescription, tone, generatedLetter, quality, matchedSkills, isGeminiPowered]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get('/career-profile');
-        if (res.data.success && res.data.profile) {
-          setProfile(res.data.profile);
+        const [profileRes, resumesRes] = await Promise.allSettled([
+          api.get('/career-profile'),
+          api.get('/resumes')
+        ]);
+        if (profileRes.status === 'fulfilled' && profileRes.value.data.success && profileRes.value.data.profile) {
+          setProfile(profileRes.value.data.profile);
+        }
+        if (resumesRes.status === 'fulfilled' && resumesRes.value.data.success && Array.isArray(resumesRes.value.data.resumes)) {
+          setResumes(resumesRes.value.data.resumes);
+          if (resumesRes.value.data.resumes.length > 0 && !selectedResumeId) {
+            setSelectedResumeId(resumesRes.value.data.resumes[0]._id);
+          }
         }
       } catch {}
     };
-    fetchProfile();
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClearDraft = () => {
+    setSelectedResumeId('');
     setJobTitle('');
     setCompany('');
     setHiringManager('');
@@ -70,6 +87,8 @@ const CoverLetterBuilder = () => {
     setGeneratedLetter('');
     setQuality(null);
     setMatchedSkills([]);
+    setIsGeminiPowered(false);
+    setGenerationError(null);
     clearDraft(STORAGE_KEYS.COVER_LETTER_DRAFT);
     addToast('Cover letter draft cleared.', 'info');
   };
@@ -88,19 +107,27 @@ const CoverLetterBuilder = () => {
   };
 
   const handleGenerate = async () => {
-    if (!jobTitle || !company) {
-      addToast('Please enter target role and company name.', 'warning');
+    if (!jobTitle.trim() || !company.trim()) {
+      addToast('Please enter both target role and company name.', 'warning');
+      return;
+    }
+
+    if (jobDescription && jobDescription.length > 8000) {
+      addToast('Job description exceeds 8,000 characters. Please condense it.', 'warning');
       return;
     }
 
     setLoading(true);
+    setGenerationError(null);
+
     try {
       const res = await api.post('/cover-letter/generate', {
-        jobTitle,
-        company,
-        hiringManager,
-        jobDescription,
-        tone
+        jobTitle: jobTitle.trim(),
+        company: company.trim(),
+        hiringManager: hiringManager.trim(),
+        jobDescription: jobDescription.trim(),
+        tone,
+        resumeId: selectedResumeId || undefined
       });
 
       if (res.data.success) {
@@ -109,8 +136,11 @@ const CoverLetterBuilder = () => {
           setGeneratedLetter(letter);
           const letterQuality = res.data.quality || null;
           const letterSkills = res.data.matchedSkills || [];
+          const geminiUsed = Boolean(res.data.isGeminiPowered);
+
           if (letterQuality) setQuality(letterQuality);
           if (letterSkills) setMatchedSkills(letterSkills);
+          setIsGeminiPowered(geminiUsed);
 
           // Add to persistent recent history (max 5 items, deduplicated)
           const historyItem = {
@@ -123,7 +153,8 @@ const CoverLetterBuilder = () => {
             jobDescription,
             letter,
             quality: letterQuality,
-            matchedSkills: letterSkills
+            matchedSkills: letterSkills,
+            isGeminiPowered: geminiUsed
           };
           const updated = addToHistory(STORAGE_KEYS.COVER_LETTER_HISTORY, historyItem, (existing, newItem) => {
             return (
@@ -136,67 +167,17 @@ const CoverLetterBuilder = () => {
           });
           setRecentHistory(updated);
 
-          addToast(res.data.isGeminiPowered ? '✨ Evidence-grounded cover letter generated!' : 'Cover letter generated from your verified profile.', 'success');
+          addToast(geminiUsed ? '✨ Evidence-grounded cover letter generated with Gemini AI!' : 'Cover letter generated from verified profile facts.', 'success');
         } else {
-          throw new Error('No content returned');
+          throw new Error('Server returned an empty cover letter.');
         }
       } else {
-        throw new Error('Generation failed');
+        throw new Error(res.data.message || 'Generation failed.');
       }
-    } catch {
-      // Deterministic truthful client fallback
-      const candidateName = profile?.personal?.fullName || 'Candidate';
-      const salutation = hiringManager ? `Dear ${hiringManager},` : `Dear Hiring Team at ${company},`;
-      const hasExp = profile?.experiences && profile?.experiences.length > 0;
-      const topProj = profile?.projects?.[0];
-      const primaryEdu = profile?.education?.[0];
-      const topSkills = (profile?.skills || []).slice(0, 5).map(s => s.name).join(', ') || 'Software Engineering & Problem Solving';
-
-      let full = '';
-      if (!hasExp) {
-        const eduPhrase = primaryEdu?.degree && primaryEdu?.institution 
-          ? `with a degree in ${primaryEdu.degree}${primaryEdu.fieldOfStudy ? ` (${primaryEdu.fieldOfStudy})` : ''} from ${primaryEdu.institution}`
-          : 'with a strong technical foundation in computer science and software development';
-        const projPhrase = topProj?.name 
-          ? `Through verified engineering projects like ${topProj.name}${topProj.technologies?.length ? ` (built with ${Array.isArray(topProj.technologies) ? topProj.technologies.slice(0, 3).join(', ') : topProj.technologies})` : ''}, I have practiced designing clean architectures, writing testable code, and shipping reliable systems.`
-          : 'Through hands-on project work, I have focused on writing clean, well-tested code and collaborating effectively.';
-
-        full = `${salutation}\n\nI am writing to express my strong enthusiasm for the ${jobTitle} position at ${company}. As a developer ${eduPhrase}, I am eager to apply my skills in ${topSkills} to support your team's engineering goals.\n\n${projPhrase}\n\nI am particularly drawn to ${company} because of your commitment to excellence and product innovation. I would welcome the opportunity to discuss how my technical preparation and enthusiasm can contribute to your team.\n\nThank you for your time and consideration.\n\nSincerely,\n${candidateName}`;
-      } else {
-        const exp = profile.experiences[0];
-        const bullets = (exp.bullets || []).filter(b => b.text).map(b => b.text);
-        const highlight = bullets[0] ? `Recently, I ${bullets[0].charAt(0).toLowerCase() + bullets[0].slice(1)}` : `In my role as ${exp.role} at ${exp.company}, I delivered core features and collaborated on scalable systems.`;
-
-        full = `${salutation}\n\nI am writing to express my strong interest in the ${jobTitle} role at ${company}. With proven engineering experience as a ${exp.role} at ${exp.company}, I bring a strong track record of designing reliable architectures and shipping robust products.\n\n${highlight}\n\nMy technical core centers on ${topSkills}. I am excited about the opportunity to bring my technical background, problem-solving skills, and dedication to ${company}.\n\nThank you for reviewing my application. I look forward to the opportunity to discuss my qualifications.\n\nSincerely,\n${candidateName}`;
-      }
-
-      setGeneratedLetter(full);
-      setQuality({ overall: 92, relevance: 90, specificity: 94 });
-      setMatchedSkills((profile?.skills || []).slice(0, 4).map(s => s.name));
-
-      const historyItem = {
-        id: 'cl_' + Date.now(),
-        createdAt: new Date().toISOString(),
-        jobTitle: jobTitle || 'Target Role',
-        company: company || 'Target Employer',
-        hiringManager: hiringManager || '',
-        tone,
-        jobDescription,
-        letter: full,
-        quality: { overall: 92, relevance: 90, specificity: 94 },
-        matchedSkills: (profile?.skills || []).slice(0, 4).map(s => s.name)
-      };
-      const updated = addToHistory(STORAGE_KEYS.COVER_LETTER_HISTORY, historyItem, (existing, newItem) => {
-        return (
-          existing.jobTitle?.toLowerCase() === newItem.jobTitle?.toLowerCase() &&
-          existing.company?.toLowerCase() === newItem.company?.toLowerCase() &&
-          (existing.hiringManager || '') === (newItem.hiringManager || '') &&
-          existing.tone === newItem.tone &&
-          existing.jobDescription?.trim() === newItem.jobDescription?.trim()
-        );
-      });
-      setRecentHistory(updated);
-      addToast('Generated letter from your verified Career Profile.', 'info');
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.message || 'Failed to generate cover letter. Please check your inputs and try again.';
+      setGenerationError(errMsg);
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -333,13 +314,35 @@ const CoverLetterBuilder = () => {
               />
             </div>
 
+            {resumes.length > 0 && (
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Grounding Source</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Truth Anchor</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={selectedResumeId}
+                  onChange={(e) => setSelectedResumeId(e.target.value)}
+                >
+                  <option value="">Full Career Profile (All Verified Facts)</option>
+                  {resumes.map(r => (
+                    <option key={r._id} value={r._id}>
+                      Resume: {r.title} ({r.targetRole || 'General'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={handleGenerate}
-              disabled={loading || !jobTitle || !company}
+              disabled={loading || !jobTitle.trim() || !company.trim()}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '0.625rem 1rem' }}
+              style={{ width: '100%', padding: '0.625rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             >
-              <Sparkles size={16} /> {loading ? 'Generating Grounded Letter...' : 'Generate Letter'}
+              <Sparkles size={16} className={loading ? 'spin-slow' : ''} />
+              {loading ? 'Generating cover letter...' : 'Generate Letter'}
             </button>
           </div>
 
@@ -430,10 +433,34 @@ const CoverLetterBuilder = () => {
                 style={{ padding: '4rem 1rem' }}
               >
                 <AiProcessingIndicator
-                  text="Drafting Evidence-Grounded Cover Letter with Gemini AI..."
+                  text="Generating cover letter with Google Gemini..."
                   subtext="Synthesizing verified career achievements with target company mission."
                   size="lg"
                 />
+              </motion.div>
+            ) : generationError ? (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ padding: '3rem 1.5rem', textAlign: 'center', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', margin: 'auto 0' }}
+              >
+                <AlertCircle size={36} color="var(--danger)" style={{ margin: '0 auto 12px auto' }} />
+                <h4 style={{ margin: '0 0 8px 0', color: 'var(--danger)', fontSize: '1.05rem', fontWeight: 700 }}>
+                  Cover Letter Generation Failed
+                </h4>
+                <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '450px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  {generationError}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <RefreshCw size={13} /> Retry Generation
+                </button>
               </motion.div>
             ) : (
               <motion.div
@@ -461,12 +488,19 @@ const CoverLetterBuilder = () => {
                   placeholder="Generated cover letter text will appear here in document format. You can edit any paragraph directly..."
                 />
 
-                {matchedSkills && matchedSkills.length > 0 && (
-                  <div style={{ marginTop: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      Evidence Grounding:
-                    </span>
-                    {matchedSkills.map((skill, i) => (
+                <div style={{ marginTop: 'var(--space-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {isGeminiPowered ? (
+                      <span className="badge badge-verified" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        ✨ Powered by Google Gemini AI
+                      </span>
+                    ) : generatedLetter ? (
+                      <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                        Grounded via Profile Facts
+                      </span>
+                    ) : null}
+
+                    {matchedSkills && matchedSkills.length > 0 && matchedSkills.map((skill, i) => (
                       <span
                         key={i}
                         className="badge badge-verified"
@@ -475,7 +509,7 @@ const CoverLetterBuilder = () => {
                       </span>
                     ))}
                   </div>
-                )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

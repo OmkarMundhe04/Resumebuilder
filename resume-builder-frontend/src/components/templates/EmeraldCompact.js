@@ -15,16 +15,16 @@ const EmeraldCompact = ({ resume }) => {
         fontFamily,
         color: '#111827',
         backgroundColor: '#ffffff',
-        padding: '28px 34px',
-        lineHeight: 1.4,
-        fontSize: '9.5pt',
+        padding: 'var(--resume-page-padding-top, 48px) var(--resume-page-padding-x, 48px) var(--resume-page-padding-bottom, 48px)',
+        lineHeight: 'var(--resume-line-height, 1.4)',
+        fontSize: 'var(--resume-body-font-size, 10pt)',
         minHeight: '100%'
       }}
     >
       {/* Top Banner Header */}
-      <header data-section="personal" style={{ borderBottom: `2px solid ${accentColor}`, paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header data-section="personal" className="resume-header" style={{ borderBottom: `2px solid ${accentColor}`, paddingBottom: '10px', marginBottom: 'var(--resume-header-gap, 12px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '18pt', fontWeight: 800, margin: 0, color: '#064e3b' }}>
+          <h1 style={{ fontSize: 'var(--resume-h1-font-size, 18pt)', fontWeight: 800, margin: 0, color: '#064e3b' }}>
             {personal?.fullName || 'Your Name'}
           </h1>
           {personal?.title && (
@@ -32,7 +32,7 @@ const EmeraldCompact = ({ resume }) => {
               {personal?.title || 'Professional Title'}
             </div>
           )}
-          <div style={{ fontSize: '8.5pt', color: '#4b5563', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ fontSize: 'var(--resume-meta-font-size, 8.5pt)', color: '#4b5563', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {personal?.email && <ResumeLink href={personal.email} style={{ color: '#4b5563' }} />}
             {personal?.phone && <span>• <ResumeLink href={personal.phone} style={{ color: '#4b5563' }} /></span>}
             {personal?.location && <span>• {personal.location}</span>}
@@ -47,7 +47,7 @@ const EmeraldCompact = ({ resume }) => {
           <img 
             src={personal.photoUrl} 
             alt={personal.fullName || 'Photo'} 
-            style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: `2px solid ${accentColor}`, marginLeft: '16px' }}
+            style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: `2px solid ${accentColor}`, marginLeft: '16px' }}
           />
         )}
       </header>
@@ -60,7 +60,7 @@ const EmeraldCompact = ({ resume }) => {
           case 'summary':
             if (!personal?.summary) return null;
             return (
-              <section key="summary" data-section="summary" className="resume-section" style={{ marginBottom: '10px' }}>
+              <section key="summary" data-section="summary" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
                 <p style={{ margin: 0, color: '#374151', fontSize: '9pt', lineHeight: 1.45 }}>
                   {personal.summary}
                 </p>
@@ -70,8 +70,8 @@ const EmeraldCompact = ({ resume }) => {
           case 'skills':
             if (!skills || skills.length === 0) return null;
             return (
-              <section key="skills" data-section="skills" className="resume-section" style={{ marginBottom: '10px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="skills" data-section="skills" className="resume-section skills-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Skills
                 </h2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -90,11 +90,11 @@ const EmeraldCompact = ({ resume }) => {
           case 'experience':
             if (!experiences || experiences.length === 0) return null;
             return (
-              <section key="experience" data-section="experience" className="resume-section" style={{ marginBottom: '12px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 6px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="experience" data-section="experience" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 11px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 5px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Experience
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--resume-item-gap, 6px)' }}>
                   {experiences.map((exp, idx) => {
                     const validBullets = (exp.bullets || []).filter(b => b && b.text && b.text.trim());
                     return (
@@ -112,7 +112,7 @@ const EmeraldCompact = ({ resume }) => {
                         {validBullets.length > 0 && (
                           <ul style={{ margin: '2px 0 0 14px', padding: 0, fontSize: '9pt', color: '#374151' }}>
                             {validBullets.map((b, bIdx) => (
-                              <li key={b.id || bIdx} style={{ marginBottom: '1px' }}>{b.text}</li>
+                              <li key={b.id || bIdx} style={{ marginBottom: 'var(--resume-bullet-gap, 1.5px)' }}>{b.text}</li>
                             ))}
                           </ul>
                         )}
@@ -126,11 +126,11 @@ const EmeraldCompact = ({ resume }) => {
           case 'projects':
             if (!projects || projects.length === 0) return null;
             return (
-              <section key="projects" data-section="projects" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="projects" data-section="projects" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Projects
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--resume-item-gap, 5px)' }}>
                   {projects.map((proj, idx) => {
                     const techStr = Array.isArray(proj.technologies) ? proj.technologies.join(', ') : (proj.technologies || '');
                     const validBullets = (proj.bullets || []).filter(b => b && b.text && b.text.trim());
@@ -158,7 +158,7 @@ const EmeraldCompact = ({ resume }) => {
                         {validBullets.length > 0 && (
                           <ul style={{ margin: '2px 0 0 14px', padding: 0, fontSize: '8.5pt', color: '#374151' }}>
                             {validBullets.map((b, bIdx) => (
-                              <li key={b.id || bIdx}>{b.text}</li>
+                              <li key={b.id || bIdx} style={{ marginBottom: 'var(--resume-bullet-gap, 1.5px)' }}>{b.text}</li>
                             ))}
                           </ul>
                         )}
@@ -172,12 +172,12 @@ const EmeraldCompact = ({ resume }) => {
           case 'education':
             if (!education || education.length === 0) return null;
             return (
-              <section key="education" data-section="education" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="education" data-section="education" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Education
                 </h2>
                 {education.map((edu, idx) => (
-                  <div key={edu.id || idx} className="education-item" style={{ marginBottom: '4px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={edu.id || idx} className="education-item" style={{ marginBottom: 'var(--resume-item-gap, 4px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9pt' }}>
                       <div>
                         <strong>{edu.degree}</strong>, {edu.institution}
@@ -204,14 +204,14 @@ const EmeraldCompact = ({ resume }) => {
           case 'certifications':
             if (!certifications || certifications.length === 0) return null;
             return (
-              <section key="certifications" data-section="certifications" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="certifications" data-section="certifications" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Certifications
                 </h2>
                 {certifications.map((c, idx) => {
                   const certUrl = c.credentialUrl || c.url;
                   return (
-                    <div key={c.id || idx} className="certification-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: '2px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <div key={c.id || idx} className="certification-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: 'var(--resume-bullet-gap, 2px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                       <strong>{c.name}</strong> — {c.issuer} {c.issueDate ? `(${c.issueDate}${c.expiryDate ? ` - ${c.expiryDate}` : ''})` : ''}
                       {c.credentialId && <span style={{ color: '#6b7280', fontSize: '8pt' }}> [ID: {c.credentialId}]</span>}
                       {certUrl && <ResumeLink href={certUrl} label="Verify ↗" style={{ marginLeft: '4px', color: accentColor, fontSize: '8pt' }} />}
@@ -224,12 +224,12 @@ const EmeraldCompact = ({ resume }) => {
           case 'publications':
             if (!publications || publications.length === 0) return null;
             return (
-              <section key="publications" data-section="publications" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="publications" data-section="publications" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Publications & Research
                 </h2>
                 {publications.map((p, idx) => (
-                  <div key={p.id || idx} className="publication-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: '2px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={p.id || idx} className="publication-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: 'var(--resume-bullet-gap, 2px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <strong>{p.title}</strong> — {p.publisher} {p.date ? `(${p.date})` : ''}
                     {p.url && <ResumeLink href={p.url} label="Link ↗" style={{ marginLeft: '4px', color: accentColor, fontSize: '8pt' }} />}
                     {p.summary && <div style={{ fontSize: '8pt', color: '#4b5563' }}>{p.summary}</div>}
@@ -241,12 +241,12 @@ const EmeraldCompact = ({ resume }) => {
           case 'awards':
             if (!awards || awards.length === 0) return null;
             return (
-              <section key="awards" data-section="awards" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="awards" data-section="awards" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Honors & Awards
                 </h2>
                 {awards.map((a, idx) => (
-                  <div key={a.id || idx} className="award-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: '2px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={a.id || idx} className="award-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: 'var(--resume-bullet-gap, 2px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <strong>{a.title}</strong> — {a.issuer} {a.date ? `(${a.date})` : ''}
                     {a.description && <span style={{ color: '#4b5563' }}>: {a.description}</span>}
                   </div>
@@ -257,12 +257,12 @@ const EmeraldCompact = ({ resume }) => {
           case 'volunteer':
             if (!volunteer || volunteer.length === 0) return null;
             return (
-              <section key="volunteer" data-section="volunteer" className="resume-section" style={{ marginBottom: '10px' }}>
-                <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+              <section key="volunteer" data-section="volunteer" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                   Volunteer & Leadership
                 </h2>
                 {volunteer.map((v, idx) => (
-                  <div key={v.id || idx} className="volunteer-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: '2px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={v.id || idx} className="volunteer-item" style={{ fontSize: '8.5pt', color: '#374151', marginBottom: 'var(--resume-item-gap, 3px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <strong>{v.role}</strong> — {v.organization} {v.startDate ? `(${v.startDate}${v.endDate ? ` – ${v.endDate}` : ' – Present'})` : ''}
                     {v.description && <div style={{ fontSize: '8pt', color: '#4b5563' }}>{v.description}</div>}
                   </div>
@@ -275,8 +275,8 @@ const EmeraldCompact = ({ resume }) => {
             return (
               <React.Fragment key="custom">
                 {customSections.map((cs, idx) => (
-                  <section key={cs.id || idx} data-section="custom" className="resume-section" style={{ marginBottom: '10px' }}>
-                    <h2 style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 4px 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <section key={cs.id || idx} data-section="custom" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 10px)' }}>
+                    <h2 style={{ fontSize: 'var(--resume-h2-font-size, 9.5pt)', fontWeight: 700, textTransform: 'uppercase', color: accentColor, margin: '0 0 var(--resume-heading-gap, 4px) 0', borderBottom: '1px solid #d1fae5', paddingBottom: '2px', breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                       {cs.title || 'Additional Section'}
                     </h2>
                     <p style={{ margin: 0, fontSize: '8.5pt', color: '#374151', whiteSpace: 'pre-line' }}>{cs.content}</p>

@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GitCompare, X, PlusCircle, CheckCircle } from 'lucide-react';
 
 const VersionDiffModal = ({ originalResume, tailoredResume, isOpen, onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !originalResume || !tailoredResume) return null;
 
   // Extract skills diff
@@ -11,7 +21,15 @@ const VersionDiffModal = ({ originalResume, tailoredResume, isOpen, onClose }) =
   const addedSkills = tailSkills.filter(s => !origSkills.includes(s));
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="version-diff-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="version-diff-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '900px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

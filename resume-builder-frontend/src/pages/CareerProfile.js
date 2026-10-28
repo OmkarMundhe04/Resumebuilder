@@ -22,10 +22,14 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
-  ExternalLink
+  ExternalLink,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useAutosave } from '../hooks/useAutosave';
 import { generateId } from '../utils/canonicalResume';
 import ResumeImporterModal from '../components/import/ResumeImporterModal';
 import PageTransition from '../components/motion/PageTransition';
@@ -36,11 +40,46 @@ import EvidenceCoachModal from '../components/truth/EvidenceCoachModal';
 
 const CareerProfile = () => {
   const { addToast } = useToast();
+  const { user, updatePreferences } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+
+  // Autosave ON/OFF preference:
+  // Reads from user?.preferences?.careerProfileAutosave or localStorage fallback.
+  // Defaults to true for new users.
+  const [autosaveEnabled, setAutosaveEnabled] = useState(() => {
+    if (user?.preferences?.careerProfileAutosave !== undefined) {
+      return Boolean(user.preferences.careerProfileAutosave);
+    }
+    try {
+      const local = localStorage.getItem('careerProfileAutosave');
+      return local !== null ? JSON.parse(local) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (user?.preferences?.careerProfileAutosave !== undefined) {
+      setAutosaveEnabled(Boolean(user.preferences.careerProfileAutosave));
+    }
+  }, [user?.preferences?.careerProfileAutosave]);
+
+  const handleToggleAutosave = () => {
+    const nextVal = !autosaveEnabled;
+    setAutosaveEnabled(nextVal);
+    try {
+      localStorage.setItem('careerProfileAutosave', JSON.stringify(nextVal));
+    } catch {
+      // ignore storage issues
+    }
+    if (updatePreferences) {
+      updatePreferences({ careerProfileAutosave: nextVal });
+    }
+  };
 
   // AI Modals state
   const [projectAnalyzerOpen, setProjectAnalyzerOpen] = useState(false);
@@ -96,35 +135,65 @@ const CareerProfile = () => {
     };
   }, []);
 
+  // Autosave API save handler
+  const handleSaveApi = useCallback(async (dataToSave, { isAutosave } = {}) => {
+    const res = await api.put('/career-profile', dataToSave);
+    if (!res.data.success) {
+      throw new Error(res.data.message || 'Failed to save Career Profile');
+    }
+    return res.data.profile;
+  }, []);
+
+  const {
+    status: autosaveStatus,
+    isDirty,
+    saveImmediately,
+    retry: retryAutosave,
+    setSavedBaseline
+  } = useAutosave({
+    data: profile,
+    onSave: handleSaveApi,
+    debounceMs: 1500,
+    enabled: autosaveEnabled,
+    onSuccess: (savedProfile, { isAutosave }) => {
+      if (!isAutosave) {
+        addToast('Career Profile saved successfully (Truth DB & Portfolio updated).', 'success');
+      }
+    },
+    onError: (err, { isAutosave }) => {
+      if (!isAutosave) {
+        addToast('Failed to save profile changes.', 'error');
+      }
+    }
+  });
+
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/career-profile');
       if (res.data.success) {
-        setProfile(normalizeProfile(res.data.profile));
+        const normalized = normalizeProfile(res.data.profile);
+        setProfile(normalized);
+        setSavedBaseline(normalized);
       }
     } catch {
       addToast('Failed to load Career Profile.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast, normalizeProfile]);
+  }, [addToast, normalizeProfile, setSavedBaseline]);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
   const handleSaveProfile = async () => {
-    if (!profile) return;
+    if (!profile || saving || autosaveStatus === 'saving') return;
     setSaving(true);
     try {
-      const res = await api.put('/career-profile', profile);
-      if (res.data.success) {
-        setProfile(normalizeProfile(res.data.profile));
-        addToast('Career Profile saved successfully (Truth DB & Portfolio updated).', 'success');
-      }
+      await saveImmediately();
     } catch {
-      addToast('Failed to save profile changes.', 'error');
+      // Toast already handled by onError
     } finally {
       setSaving(false);
     }
@@ -425,12 +494,90 @@ const CareerProfile = () => {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button onClick={() => setImportModalOpen(true)} className="btn btn-secondary btn-sm">
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Autosave Toggle & Status Control */}
+              <div className="autosave-control-bar" id="career-profile-autosave-bar">
+                <button
+                  type="button"
+                  onClick={handleToggleAutosave}
+                  className="autosave-toggle-btn"
+                  role="switch"
+                  aria-checked={autosaveEnabled}
+                  aria-label="Toggle Career Profile Autosave"
+                  id="career-profile-autosave-toggle"
+                  title={autosaveEnabled ? 'Autosave is enabled (saves after ~1.5s)' : 'Autosave is disabled (click to enable)'}
+                >
+                  <span style={{ fontSize: '0.8125rem' }}>Autosave</span>
+                  <div className={`autosave-pill-track ${autosaveEnabled ? 'active' : ''}`}>
+                    <div className="autosave-pill-thumb" />
+                  </div>
+                  <span className="autosave-state-label" style={{ color: autosaveEnabled ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
+                    {autosaveEnabled ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+
+                <span style={{ color: 'var(--border-default)', fontSize: '0.875rem' }}>|</span>
+
+                {/* Subtle Dynamic Status Indicator */}
+                {autosaveEnabled ? (
+                  <>
+                    {autosaveStatus === 'saving' && (
+                      <span className="autosave-status-badge status-saving" id="autosave-status">
+                        <RefreshCw size={12} className="spin-icon" />
+                        <span>Saving...</span>
+                      </span>
+                    )}
+                    {autosaveStatus === 'dirty' && (
+                      <span className="autosave-status-badge status-dirty" id="autosave-status">
+                        <span className="status-dot dot-amber" />
+                        <span>Unsaved changes</span>
+                      </span>
+                    )}
+                    {autosaveStatus === 'saved' && (
+                      <span className="autosave-status-badge status-saved" id="autosave-status">
+                        <Check size={12} />
+                        <span>Saved just now ✓</span>
+                      </span>
+                    )}
+                    {autosaveStatus === 'error' && (
+                      <span className="autosave-status-badge status-error" id="autosave-status">
+                        <AlertCircle size={12} />
+                        <span>Save failed —</span>
+                        <button
+                          type="button"
+                          onClick={retryAutosave}
+                          className="autosave-retry-btn"
+                          id="autosave-retry-button"
+                        >
+                          Retry
+                        </button>
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="autosave-status-badge status-disabled" id="autosave-status">
+                    {isDirty ? (
+                      <>
+                        <span className="status-dot dot-amber" />
+                        <span>Unsaved changes</span>
+                      </>
+                    ) : (
+                      <span>Autosave off</span>
+                    )}
+                  </span>
+                )}
+              </div>
+
+              <button onClick={() => setImportModalOpen(true)} className="btn btn-secondary btn-sm" id="career-profile-import-btn">
                 <UploadCloud size={14} /> Import Resume
               </button>
-              <button onClick={handleSaveProfile} disabled={saving} className="btn btn-primary btn-sm">
-                <Save size={14} /> {saving ? 'Saving...' : 'Save Profile'}
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving || autosaveStatus === 'saving'}
+                className="btn btn-primary btn-sm"
+                id="career-profile-manual-save-btn"
+              >
+                <Save size={14} /> {saving || autosaveStatus === 'saving' ? 'Saving...' : 'Save Profile'}
               </button>
             </div>
           </div>
@@ -2218,7 +2365,9 @@ const CareerProfile = () => {
             isOpen={true}
             onClose={() => setImportModalOpen(false)}
             onImportSuccess={(newProfile) => {
-              setProfile(normalizeProfile(newProfile));
+              const normalized = normalizeProfile(newProfile);
+              setProfile(normalized);
+              setSavedBaseline(normalized);
               setImportModalOpen(false);
             }}
           />

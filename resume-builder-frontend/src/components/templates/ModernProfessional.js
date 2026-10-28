@@ -15,22 +15,22 @@ const ModernProfessional = ({ resume }) => {
         fontFamily,
         color: '#1e293b',
         backgroundColor: '#ffffff',
-        padding: '34px 38px',
-        lineHeight: 1.5,
-        fontSize: '10pt',
+        padding: 'var(--resume-page-padding-top, 48px) var(--resume-page-padding-x, 48px) var(--resume-page-padding-bottom, 48px)',
+        lineHeight: 'var(--resume-line-height, 1.45)',
+        fontSize: 'var(--resume-body-font-size, 10pt)',
         minHeight: '100%'
       }}
     >
       {/* Modern Accent Header */}
-      <header data-section="personal" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '18px', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <header data-section="personal" className="resume-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', marginBottom: 'var(--resume-header-gap, 14px)', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {personal?.showPhoto && personal?.photoUrl && (
             <img
               src={personal.photoUrl}
               alt={personal.fullName || 'Profile'}
               style={{
-                width: '70px',
-                height: '70px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 objectFit: 'cover',
                 border: `2.5px solid ${accentColor}`,
@@ -40,17 +40,17 @@ const ModernProfessional = ({ resume }) => {
             />
           )}
           <div>
-            <h1 style={{ fontSize: '22pt', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: 'var(--resume-h1-font-size, 20pt)', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>
               {personal?.fullName || 'Full Name'}
             </h1>
             {personal?.title && (
-              <div style={{ fontSize: '11pt', fontWeight: 600, color: accentColor, marginTop: '2px' }}>
+              <div style={{ fontSize: '10.5pt', fontWeight: 600, color: accentColor, marginTop: '2px' }}>
                 {personal.title}
               </div>
             )}
           </div>
         </div>
-        <div style={{ textAlign: 'right', fontSize: '8.5pt', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ textAlign: 'right', fontSize: 'var(--resume-meta-font-size, 8.5pt)', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {personal?.email && <ResumeLink href={personal.email} style={{ color: '#64748b' }} />}
           {personal?.phone && <ResumeLink href={personal.phone} style={{ color: '#64748b' }} />}
           {personal?.location && <span>{personal.location}</span>}
@@ -69,14 +69,14 @@ const ModernProfessional = ({ resume }) => {
           case 'summary':
             if (!personal?.summary) return null;
             return (
-              <section key="summary" data-section="summary" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="summary" data-section="summary" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     About Me
                   </h2>
                 </div>
-                <p style={{ margin: 0, fontSize: '9.5pt', color: '#334155', lineHeight: 1.55 }}>
+                <p style={{ margin: 0, fontSize: '9.5pt', color: '#334155', lineHeight: 1.5 }}>
                   {personal.summary}
                 </p>
               </section>
@@ -85,30 +85,30 @@ const ModernProfessional = ({ resume }) => {
           case 'experience':
             if (!experiences || experiences.length === 0) return null;
             return (
-              <section key="experience" data-section="experience" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <section key="experience" data-section="experience" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 6px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Experience
                   </h2>
                 </div>
                 {experiences.map((exp, idx) => {
                   const validBullets = (exp.bullets || []).filter(b => b && b.text && b.text.trim());
                   return (
-                    <div key={exp.id || idx} className="experience-item" style={{ marginBottom: '12px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <div key={exp.id || idx} className="experience-item" style={{ marginBottom: 'var(--resume-item-gap, 8px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 700, fontSize: '10pt', color: '#0f172a' }}>{exp.role}</span>
                         <span style={{ fontSize: '8.5pt', color: '#64748b', backgroundColor: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
                           {exp.startDate || ''} – {exp.isCurrent ? 'Present' : (exp.endDate || '')}
                         </span>
                       </div>
-                      <div style={{ fontSize: '9pt', color: accentColor, fontWeight: 500, marginBottom: '4px' }}>
+                      <div style={{ fontSize: '9pt', color: accentColor, fontWeight: 500, marginBottom: '3px' }}>
                         {exp.company} {exp.location ? `• ${exp.location}` : ''}
                       </div>
                       {validBullets.length > 0 && (
                         <ul style={{ margin: '0 0 0 16px', padding: 0, fontSize: '9pt', color: '#334155' }}>
                           {validBullets.map((b, bIdx) => (
-                            <li key={b.id || bIdx} style={{ marginBottom: '3px' }}>{b.text}</li>
+                            <li key={b.id || bIdx} style={{ marginBottom: 'var(--resume-bullet-gap, 2px)' }}>{b.text}</li>
                           ))}
                         </ul>
                       )}
@@ -121,10 +121,10 @@ const ModernProfessional = ({ resume }) => {
           case 'skills':
             if (!skills || skills.length === 0) return null;
             return (
-              <section key="skills" data-section="skills" className="resume-section" style={{ marginBottom: '16px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="skills" data-section="skills" className="resume-section skills-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Skills
                   </h2>
                 </div>
@@ -155,15 +155,15 @@ const ModernProfessional = ({ resume }) => {
           case 'education':
             if (!education || education.length === 0) return null;
             return (
-              <section key="education" data-section="education" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="education" data-section="education" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Education
                   </h2>
                 </div>
                 {education.map((edu, idx) => (
-                  <div key={edu.id || idx} className="education-item" style={{ marginBottom: '6px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={edu.id || idx} className="education-item" style={{ marginBottom: 'var(--resume-item-gap, 6px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700, fontSize: '9.5pt', color: '#0f172a' }}>{edu.degree}</span>
                       <span style={{ fontSize: '8.5pt', color: '#64748b' }}>{edu.startDate} – {edu.endDate}</span>
@@ -189,10 +189,10 @@ const ModernProfessional = ({ resume }) => {
           case 'projects':
             if (!projects || projects.length === 0) return null;
             return (
-              <section key="projects" data-section="projects" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="projects" data-section="projects" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Projects
                   </h2>
                 </div>
@@ -200,7 +200,7 @@ const ModernProfessional = ({ resume }) => {
                   const techStr = Array.isArray(proj.technologies) ? proj.technologies.join(', ') : (proj.technologies || '');
                   const validBullets = (proj.bullets || []).filter(b => b && b.text && b.text.trim());
                   return (
-                    <div key={proj.id || idx} className="project-item" style={{ marginBottom: '8px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <div key={proj.id || idx} className="project-item" style={{ marginBottom: 'var(--resume-item-gap, 7px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
                         <div>
                           <span style={{ fontWeight: 700, fontSize: '9.5pt', color: '#0f172a' }}>{proj.name}</span>
@@ -223,7 +223,7 @@ const ModernProfessional = ({ resume }) => {
                       {validBullets.length > 0 && (
                         <ul style={{ margin: '2px 0 0 16px', padding: 0, fontSize: '9pt', color: '#334155' }}>
                           {validBullets.map((b, bIdx) => (
-                            <li key={b.id || bIdx}>{b.text}</li>
+                            <li key={b.id || bIdx} style={{ marginBottom: 'var(--resume-bullet-gap, 2px)' }}>{b.text}</li>
                           ))}
                         </ul>
                       )}
@@ -236,17 +236,17 @@ const ModernProfessional = ({ resume }) => {
           case 'certifications':
             if (!certifications || certifications.length === 0) return null;
             return (
-              <section key="certifications" data-section="certifications" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="certifications" data-section="certifications" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Certifications
                   </h2>
                 </div>
                 {certifications.map((c, idx) => {
                   const certUrl = c.credentialUrl || c.url;
                   return (
-                    <div key={c.id || idx} className="certification-item" style={{ fontSize: '9pt', color: '#334155', marginBottom: '3px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <div key={c.id || idx} className="certification-item" style={{ fontSize: '9pt', color: '#334155', marginBottom: 'var(--resume-bullet-gap, 2px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                       <strong>{c.name}</strong> — {c.issuer} {c.issueDate ? `(${c.issueDate}${c.expiryDate ? ` - ${c.expiryDate}` : ''})` : ''}
                       {c.credentialId && <span style={{ color: '#64748b', fontSize: '8.5pt' }}> [ID: {c.credentialId}]</span>}
                       {certUrl && <ResumeLink href={certUrl} label="[Verify]" style={{ marginLeft: '6px', color: accentColor }} />}
@@ -259,15 +259,15 @@ const ModernProfessional = ({ resume }) => {
           case 'publications':
             if (!publications || publications.length === 0) return null;
             return (
-              <section key="publications" data-section="publications" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="publications" data-section="publications" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
-                    Publications
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                    Publications & Research
                   </h2>
                 </div>
                 {publications.map((p, idx) => (
-                  <div key={p.id || idx} className="publication-item" style={{ fontSize: '9pt', color: '#334155', marginBottom: '3px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={p.id || idx} className="publication-item" style={{ marginBottom: 'var(--resume-bullet-gap, 2px)', fontSize: '9pt', color: '#334155', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <strong>{p.title}</strong> — {p.publisher} {p.date ? `(${p.date})` : ''}
                     {p.url && <ResumeLink href={p.url} label="[Link]" style={{ marginLeft: '6px', color: accentColor }} />}
                     {p.summary && <div style={{ fontSize: '8.5pt', color: '#64748b' }}>{p.summary}</div>}
@@ -279,15 +279,15 @@ const ModernProfessional = ({ resume }) => {
           case 'awards':
             if (!awards || awards.length === 0) return null;
             return (
-              <section key="awards" data-section="awards" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="awards" data-section="awards" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
                     Honors & Awards
                   </h2>
                 </div>
                 {awards.map((a, idx) => (
-                  <div key={a.id || idx} className="award-item" style={{ fontSize: '9pt', color: '#334155', marginBottom: '3px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                  <div key={a.id || idx} className="award-item" style={{ marginBottom: 'var(--resume-bullet-gap, 2px)', fontSize: '9pt', color: '#334155', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                     <strong>{a.title}</strong> — {a.issuer} {a.date ? `(${a.date})` : ''}
                     {a.description && <span style={{ color: '#64748b' }}>: {a.description}</span>}
                   </div>
@@ -298,17 +298,20 @@ const ModernProfessional = ({ resume }) => {
           case 'volunteer':
             if (!volunteer || volunteer.length === 0) return null;
             return (
-              <section key="volunteer" data-section="volunteer" className="resume-section" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <section key="volunteer" data-section="volunteer" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                   <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                  <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
-                    Volunteer
+                  <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                    Volunteer Experience
                   </h2>
                 </div>
                 {volunteer.map((v, idx) => (
-                  <div key={v.id || idx} className="volunteer-item" style={{ fontSize: '9pt', color: '#334155', marginBottom: '3px', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                    <strong>{v.role}</strong> — {v.organization} {v.startDate ? `(${v.startDate}${v.endDate ? ` – ${v.endDate}` : ' – Present'})` : ''}
-                    {v.description && <div style={{ fontSize: '8.5pt', color: '#64748b' }}>{v.description}</div>}
+                  <div key={v.id || idx} className="volunteer-item" style={{ marginBottom: 'var(--resume-item-gap, 5px)', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5pt', fontWeight: 700 }}>
+                      <span>{v.role} — {v.organization}</span>
+                      <span style={{ fontSize: '8.5pt', color: '#64748b', fontStyle: 'italic' }}>{v.startDate} – {v.endDate || 'Present'}</span>
+                    </div>
+                    {v.description && <p style={{ margin: '2px 0 0 0', fontSize: '9pt', color: '#475569' }}>{v.description}</p>}
                   </div>
                 ))}
               </section>
@@ -319,14 +322,14 @@ const ModernProfessional = ({ resume }) => {
             return (
               <React.Fragment key="custom">
                 {customSections.map((cs, idx) => (
-                  <section key={cs.id || idx} data-section="custom" className="resume-section" style={{ marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <section key={cs.id || idx} data-section="custom" className="resume-section" style={{ marginBottom: 'var(--resume-section-gap, 12px)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--resume-heading-gap, 5px)' }}>
                       <div style={{ width: '4px', height: '14px', backgroundColor: accentColor, borderRadius: '2px' }}></div>
-                      <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
-                        {cs.title}
+                      <h2 style={{ fontSize: 'var(--resume-h2-font-size, 10.5pt)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', margin: 0, breakAfter: 'avoid', pageBreakAfter: 'avoid' }}>
+                        {cs.title || 'Additional Information'}
                       </h2>
                     </div>
-                    <p style={{ margin: 0, fontSize: '9pt', color: '#334155', whiteSpace: 'pre-line' }}>{cs.content}</p>
+                    <p style={{ margin: 0, fontSize: '9.5pt', color: '#334155', whiteSpace: 'pre-line' }}>{cs.content}</p>
                   </section>
                 ))}
               </React.Fragment>

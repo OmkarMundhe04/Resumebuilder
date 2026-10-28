@@ -36,7 +36,7 @@ const RouteLoader = () => (
   </div>
 );
 
-const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1047124376483-demo-resumebuilder-clientid.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '976231298088-t12vspabm2os17ptoaqq821bbj5qvu1v.apps.googleusercontent.com';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {

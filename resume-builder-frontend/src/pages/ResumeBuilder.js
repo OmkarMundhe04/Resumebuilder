@@ -27,7 +27,9 @@ import {
   HeartHandshake,
   Layers,
   Palette,
-  GripVertical
+  GripVertical,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -85,6 +87,8 @@ const ResumeBuilder = () => {
   const [aiReviewOpen, setAiReviewOpen] = useState(false);
   const [aiReviewData, setAiReviewData] = useState(null);
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
+  const [aiReviewIsGemini, setAiReviewIsGemini] = useState(false);
+  const [aiReviewError, setAiReviewError] = useState(null);
 
   // Manual Context-Aware AI Modals
   const [projectAnalyzerOpen, setProjectAnalyzerOpen] = useState(false);
@@ -98,6 +102,77 @@ const ResumeBuilder = () => {
   const [activeSectionImprovement, setActiveSectionImprovement] = useState(null);
   const [roleAnalysisModalOpen, setRoleAnalysisModalOpen] = useState(false);
   const [roleAnalysisInitialTab, setRoleAnalysisInitialTab] = useState('analysis');
+
+  // Global modal escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (aiReviewOpen) setAiReviewOpen(false);
+        if (templateSelectorOpen) setTemplateSelectorOpen(false);
+        if (parserPreviewOpen) setParserPreviewOpen(false);
+        if (exportModalFormat) setExportModalFormat(null);
+        if (shareModalOpen) setShareModalOpen(false);
+        if (diffModalOpen) setDiffModalOpen(false);
+        if (evidenceCoachOpen) setEvidenceCoachOpen(false);
+        if (truthLedgerOpen) setTruthLedgerOpen(false);
+        if (projectAnalyzerOpen) {
+          setProjectAnalyzerOpen(false);
+          setActiveProjectForAnalyzer(null);
+        }
+        if (projectDescModalOpen) {
+          setProjectDescModalOpen(false);
+          setActiveProjectForDesc(null);
+        }
+        if (projectSkillsModalOpen) {
+          setProjectSkillsModalOpen(false);
+          setActiveProjectForSkills(null);
+        }
+        if (roleAnalysisModalOpen) setRoleAnalysisModalOpen(false);
+        if (sectionImprovementModalOpen) setSectionImprovementModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    aiReviewOpen,
+    templateSelectorOpen,
+    parserPreviewOpen,
+    exportModalFormat,
+    shareModalOpen,
+    diffModalOpen,
+    evidenceCoachOpen,
+    truthLedgerOpen,
+    projectAnalyzerOpen,
+    projectDescModalOpen,
+    projectSkillsModalOpen,
+    roleAnalysisModalOpen,
+    sectionImprovementModalOpen
+  ]);
+
+  const handleRunAiReview = async () => {
+    if (aiReviewLoading) return;
+    setAiReviewOpen(true);
+    setAiReviewLoading(true);
+    setAiReviewError(null);
+    try {
+      const res = await api.post('/ai/analyze-resume', {
+        resumeData: resume,
+        targetRole: resume.targetRole || resume.personal?.title,
+        jobDescription: typeof resume.jobDescription === 'string' ? resume.jobDescription : resume.jobDescription?.rawText
+      });
+      if (res.data.success) {
+        setAiReviewData(res.data.analysis);
+        setAiReviewIsGemini(Boolean(res.data.isGeminiPowered));
+      } else {
+        setAiReviewError(res.data.message || 'Resume review could not be completed.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Resume review could not be completed.';
+      setAiReviewError(msg);
+    } finally {
+      setAiReviewLoading(false);
+    }
+  };
 
   const autosaveTimerRef = useRef(null);
 
@@ -126,7 +201,21 @@ const ResumeBuilder = () => {
       }
       return exp;
     });
-    return modified ? { ...rawResume, projects, education, experiences } : rawResume;
+    const skills = (rawResume.skills || []).map(s => {
+      if (!s.id) {
+        modified = true;
+        return { ...s, id: generateId() };
+      }
+      return s;
+    });
+    const certifications = (rawResume.certifications || []).map(c => {
+      if (!c.id) {
+        modified = true;
+        return { ...c, id: generateId() };
+      }
+      return c;
+    });
+    return modified ? { ...rawResume, projects, education, experiences, skills, certifications } : rawResume;
   }, []);
 
   const initDefaultResume = useCallback(async () => {
@@ -332,17 +421,18 @@ const ResumeBuilder = () => {
     }
   };
 
-  // Section Reordering
-  const moveSection = (index, direction) => {
+  // Section Reordering (Canonical State)
+  const reorderSections = (sourceIndex, targetIndex) => {
+    if (sourceIndex === targetIndex) return;
     const currentOrder = [...(resume.sectionOrder || [])];
-    const targetIdx = index + direction;
-    if (targetIdx < 0 || targetIdx >= currentOrder.length) return;
-
-    const temp = currentOrder[index];
-    currentOrder[index] = currentOrder[targetIdx];
-    currentOrder[targetIdx] = temp;
-
+    if (sourceIndex < 0 || sourceIndex >= currentOrder.length || targetIndex < 0 || targetIndex >= currentOrder.length) return;
+    const [moved] = currentOrder.splice(sourceIndex, 1);
+    currentOrder.splice(targetIndex, 0, moved);
     updateResumeState({ ...resume, sectionOrder: currentOrder });
+  };
+
+  const moveSection = (index, direction) => {
+    reorderSections(index, index + direction);
   };
 
   // Projects, Education & Experience Reordering (Canonical State)
@@ -385,10 +475,37 @@ const ResumeBuilder = () => {
     reorderExperiences(index, index + direction);
   };
 
-  // Drag and Drop state for Projects, Education & Experience
+  // Skills & Certifications Reordering (Canonical State)
+  const reorderSkills = (sourceIndex, targetIndex) => {
+    if (sourceIndex === targetIndex) return;
+    const current = [...(resume.skills || [])];
+    if (sourceIndex < 0 || sourceIndex >= current.length || targetIndex < 0 || targetIndex >= current.length) return;
+    const [moved] = current.splice(sourceIndex, 1);
+    current.splice(targetIndex, 0, moved);
+    updateResumeState({ ...resume, skills: current });
+  };
+
+  const moveSkill = (index, direction) => {
+    reorderSkills(index, index + direction);
+  };
+
+  const reorderCertifications = (sourceIndex, targetIndex) => {
+    if (sourceIndex === targetIndex) return;
+    const current = [...(resume.certifications || [])];
+    if (sourceIndex < 0 || sourceIndex >= current.length || targetIndex < 0 || targetIndex >= current.length) return;
+    const [moved] = current.splice(sourceIndex, 1);
+    current.splice(targetIndex, 0, moved);
+    updateResumeState({ ...resume, certifications: current });
+  };
+
+  const moveCertification = (index, direction) => {
+    reorderCertifications(index, index + direction);
+  };
+
+  // Drag and Drop state for Sections, Projects, Education, Experience, Skills & Certifications
   const [draggedItemId, setDraggedItemId] = useState(null);
   const [dragOverItemId, setDragOverItemId] = useState(null);
-  const [dragSection, setDragSection] = useState(null); // 'projects' | 'education' | 'experiences'
+  const [dragSection, setDragSection] = useState(null); // 'sections' | 'projects' | 'education' | 'experiences' | 'skills' | 'certifications'
   const [activeDraggableId, setActiveDraggableId] = useState(null);
 
   // Touch drag tracking for mobile
@@ -420,19 +537,35 @@ const ResumeBuilder = () => {
   const handleItemDrop = (e, targetId, section, targetIndex) => {
     e.preventDefault();
     if (dragSection !== section) return;
-    const items = section === 'projects'
-      ? (resume.projects || [])
-      : section === 'education'
-        ? (resume.education || [])
-        : (resume.experiences || []);
-    const sourceIndex = items.findIndex(item => item.id === draggedItemId);
-    if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
-      if (section === 'projects') {
-        reorderProjects(sourceIndex, targetIndex);
-      } else if (section === 'education') {
-        reorderEducation(sourceIndex, targetIndex);
-      } else if (section === 'experiences') {
-        reorderExperiences(sourceIndex, targetIndex);
+    if (section === 'sections') {
+      const items = resume.sectionOrder || [];
+      const sourceIndex = items.findIndex(item => item === draggedItemId);
+      if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
+        reorderSections(sourceIndex, targetIndex);
+      }
+    } else {
+      const items = section === 'projects'
+        ? (resume.projects || [])
+        : section === 'education'
+          ? (resume.education || [])
+          : section === 'skills'
+            ? (resume.skills || [])
+            : section === 'certifications'
+              ? (resume.certifications || [])
+              : (resume.experiences || []);
+      const sourceIndex = items.findIndex((item, i) => (item.id || `item-${i}`) === draggedItemId);
+      if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
+        if (section === 'projects') {
+          reorderProjects(sourceIndex, targetIndex);
+        } else if (section === 'education') {
+          reorderEducation(sourceIndex, targetIndex);
+        } else if (section === 'experiences') {
+          reorderExperiences(sourceIndex, targetIndex);
+        } else if (section === 'skills') {
+          reorderSkills(sourceIndex, targetIndex);
+        } else if (section === 'certifications') {
+          reorderCertifications(sourceIndex, targetIndex);
+        }
       }
     }
     setDraggedItemId(null);
@@ -468,7 +601,7 @@ const ResumeBuilder = () => {
     touchDragRef.current.currentY = touch.clientY;
 
     const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-    const card = elem?.closest('.builder-item-card[data-reorder-id]');
+    const card = elem?.closest('[data-reorder-id]');
     if (card) {
       const targetId = card.getAttribute('data-reorder-id');
       const targetSec = card.getAttribute('data-reorder-section');
@@ -482,19 +615,35 @@ const ResumeBuilder = () => {
     if (!touchDragRef.current) return;
     const { section, startIndex } = touchDragRef.current;
     if (dragOverItemId) {
-      const items = section === 'projects'
-        ? (resume.projects || [])
-        : section === 'education'
-          ? (resume.education || [])
-          : (resume.experiences || []);
-      const targetIndex = items.findIndex(item => item.id === dragOverItemId);
-      if (targetIndex !== -1 && targetIndex !== startIndex) {
-        if (section === 'projects') {
-          reorderProjects(startIndex, targetIndex);
-        } else if (section === 'education') {
-          reorderEducation(startIndex, targetIndex);
-        } else if (section === 'experiences') {
-          reorderExperiences(startIndex, targetIndex);
+      if (section === 'sections') {
+        const items = resume.sectionOrder || [];
+        const targetIndex = items.findIndex(item => item === dragOverItemId);
+        if (targetIndex !== -1 && targetIndex !== startIndex) {
+          reorderSections(startIndex, targetIndex);
+        }
+      } else {
+        const items = section === 'projects'
+          ? (resume.projects || [])
+          : section === 'education'
+            ? (resume.education || [])
+            : section === 'skills'
+              ? (resume.skills || [])
+              : section === 'certifications'
+                ? (resume.certifications || [])
+                : (resume.experiences || []);
+        const targetIndex = items.findIndex((item, i) => (item.id || `item-${i}`) === dragOverItemId);
+        if (targetIndex !== -1 && targetIndex !== startIndex) {
+          if (section === 'projects') {
+            reorderProjects(startIndex, targetIndex);
+          } else if (section === 'education') {
+            reorderEducation(startIndex, targetIndex);
+          } else if (section === 'experiences') {
+            reorderExperiences(startIndex, targetIndex);
+          } else if (section === 'skills') {
+            reorderSkills(startIndex, targetIndex);
+          } else if (section === 'certifications') {
+            reorderCertifications(startIndex, targetIndex);
+          }
         }
       }
     }
@@ -563,7 +712,7 @@ const ResumeBuilder = () => {
 
   return (
     <PageTransition>
-      <div className="resume-builder-page" style={{ height: 'calc(100vh - var(--header-height) - 3rem)', display: 'flex', flexDirection: 'column' }}>
+      <div className="resume-builder-page" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Top Toolbar */}
       <div
         className="builder-toolbar no-print"
@@ -633,28 +782,15 @@ const ResumeBuilder = () => {
 
           {/* Signature Tools */}
           <button
-            onClick={async () => {
-              setAiReviewOpen(true);
-              setAiReviewLoading(true);
-              try {
-                const res = await api.post('/ai/analyze-resume', {
-                  resumeData: resume,
-                  targetRole: resume.targetRole || resume.personal?.title
-                });
-                if (res.data.success) {
-                  setAiReviewData(res.data.analysis);
-                }
-              } catch {
-                setAiReviewData('### ⚡ Resume Review Insights\n- **Parser Safety:** Clear single/dual column structure ensures standard ATS parsability.\n- **Action Verbs:** Strengthen starting verbs across work experience bullets.\n- **Quantification:** Include percentage improvements, user counts, or latency reductions.');
-              } finally {
-                setAiReviewLoading(false);
-              }
-            }}
+            type="button"
+            onClick={handleRunAiReview}
+            disabled={aiReviewLoading}
             className="btn btn-secondary btn-sm"
-            title="Gemini AI Diagnostic & Specific Modifications"
-            style={{ color: 'var(--accent-primary)', borderColor: 'rgba(2, 132, 199, 0.35)', fontWeight: 600 }}
+            title="Google Gemini AI Diagnostic & Actionable Advice"
+            style={{ color: 'var(--accent-primary)', borderColor: 'rgba(2, 132, 199, 0.35)', fontWeight: 600, gap: '4px' }}
           >
-            <Sparkles size={14} /> AI Review
+            <Sparkles size={14} className={aiReviewLoading ? 'spin-slow' : ''} />
+            {aiReviewLoading ? 'Analyzing...' : 'AI Review'}
           </button>
           <button
             type="button"
@@ -815,12 +951,17 @@ const ResumeBuilder = () => {
         leftPane={
           <div
             className="builder-editor-pane no-print"
+            tabIndex={0}
+            role="region"
+            aria-label="Resume Form Editor"
             style={{
               height: '100%',
+              minHeight: 0,
               backgroundColor: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-lg)',
-              overflowY: 'auto'
+              overflowY: 'auto',
+              overscrollBehavior: 'contain'
             }}
           >
           {/* 4-Step Primary Hierarchy Tabs */}
@@ -871,65 +1012,96 @@ const ResumeBuilder = () => {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                {(resume.sectionOrder || []).map((secKey, idx) => (
-                  <div
-                    key={secKey}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--bg-surface-hover)',
-                      border: '1px solid var(--border-subtle)',
-                      fontSize: '0.8125rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input
-                        type="checkbox"
-                        checked={resume.sectionVisibility?.[secKey] !== false}
-                        onChange={(e) => {
-                          const visibility = { ...(resume.sectionVisibility || {}) };
-                          visibility[secKey] = e.target.checked;
-                          updateResumeState({ ...resume, sectionVisibility: visibility });
-                        }}
-                      />
-                      <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{secKey}</span>
-                    </div>
+                {(resume.sectionOrder || []).map((secKey, idx) => {
+                  const isDragging = draggedItemId === secKey;
+                  const isOver = dragOverItemId === secKey;
+                  const totalSections = (resume.sectionOrder || []).length;
+                  return (
+                    <div
+                      key={secKey}
+                      data-reorder-id={secKey}
+                      data-reorder-section="sections"
+                      className={`builder-section-order-card ${isDragging ? 'is-dragging' : ''} ${isOver ? 'is-drop-target' : ''}`}
+                      draggable={activeDraggableId === secKey}
+                      onDragStart={(e) => handleItemDragStart(e, secKey, 'sections')}
+                      onDragOver={(e) => handleItemDragOver(e, secKey, 'sections')}
+                      onDragLeave={() => handleItemDragLeave(secKey)}
+                      onDrop={(e) => handleItemDrop(e, secKey, 'sections', idx)}
+                      onDragEnd={handleItemDragEnd}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--bg-surface-hover)',
+                        border: '1px solid var(--border-subtle)',
+                        fontSize: '0.8125rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          className="builder-section-drag-handle"
+                          title="Hold and drag to reorder section"
+                          aria-label={`Hold and drag to reorder ${secKey} section`}
+                          onMouseDown={() => setActiveDraggableId(secKey)}
+                          onMouseUp={() => setActiveDraggableId(null)}
+                          onTouchStart={(e) => handleTouchStart(e, secKey, 'sections', idx)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchCancel={handleTouchEnd}
+                          style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                        >
+                          <GripVertical size={16} />
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={resume.sectionVisibility?.[secKey] !== false}
+                          onChange={(e) => {
+                            const visibility = { ...(resume.sectionVisibility || {}) };
+                            visibility[secKey] = e.target.checked;
+                            updateResumeState({ ...resume, sectionVisibility: visibility });
+                          }}
+                          aria-label={`Toggle visibility for ${secKey}`}
+                        />
+                        <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{secKey}</span>
+                      </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        onClick={() => {
-                          setActiveWorkflowTab('content');
-                          setActiveSection(secKey === 'summary' ? 'personal' : secKey);
-                        }}
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Edit3 size={12} /> Edit
-                      </button>
-                      <button
-                        onClick={() => moveSection(idx, -1)}
-                        disabled={idx === 0}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ padding: '4px 6px' }}
-                        title="Move up"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        onClick={() => moveSection(idx, 1)}
-                        disabled={idx === (resume.sectionOrder || []).length - 1}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ padding: '4px 6px' }}
-                        title="Move down"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          onClick={() => {
+                            setActiveWorkflowTab('content');
+                            setActiveSection(secKey === 'summary' ? 'personal' : secKey);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Edit3 size={12} /> Edit
+                        </button>
+                        <button
+                          onClick={() => moveSection(idx, -1)}
+                          disabled={idx === 0}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="Move up"
+                          aria-label={`Move ${secKey} up`}
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => moveSection(idx, 1)}
+                          disabled={idx === totalSections - 1}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="Move down"
+                          aria-label={`Move ${secKey} down`}
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1657,9 +1829,46 @@ const ResumeBuilder = () => {
                         <Plus size={12} /> Add Bullet Point
                       </button>
                     </div>
+
+                    <div className="builder-item-card-footer">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = (resume.experiences || []).filter(item => item.id !== exp.id);
+                          updateResumeState({ ...resume, experiences: updated });
+                        }}
+                        className="btn btn-ghost btn-sm builder-card-delete-btn"
+                        aria-label={`Delete ${exp.company || exp.role || 'Experience'}`}
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Experience</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
+
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newExp = {
+                      id: generateId(),
+                      company: 'Company Name',
+                      role: 'Job Title',
+                      location: 'City, ST',
+                      startDate: '2022',
+                      endDate: 'Present',
+                      current: true,
+                      bullets: [{ id: generateId(), text: 'Key accomplishment with measurable impact' }]
+                    };
+                    updateResumeState({ ...resume, experiences: [...(resume.experiences || []), newExp] });
+                  }}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Plus size={14} /> Add Experience
+                </button>
+              </div>
             </div>
           )}
 
@@ -1891,9 +2100,44 @@ const ResumeBuilder = () => {
                         }}
                       />
                     </div>
+                    <div className="builder-item-card-footer">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = (resume.education || []).filter(item => item.id !== edu.id);
+                          updateResumeState({ ...resume, education: updated });
+                        }}
+                        className="btn btn-ghost btn-sm builder-card-delete-btn"
+                        aria-label={`Delete ${edu.degree || 'Education'}`}
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Education</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
+
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newEdu = {
+                      id: generateId(),
+                      degree: 'Degree / Major',
+                      institution: 'Institution / University',
+                      startDate: '2020',
+                      endDate: '2024',
+                      gpa: '',
+                      coursework: []
+                    };
+                    updateResumeState({ ...resume, education: [...(resume.education || []), newEdu] });
+                  }}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Plus size={14} /> Add Education
+                </button>
+              </div>
             </div>
           )}
 
@@ -1979,56 +2223,117 @@ const ResumeBuilder = () => {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                {(resume.skills || []).map((skill, idx) => (
-                  <div key={skill.id || idx} className="builder-skills-row" style={{ display: 'flex', gap: '0.625rem', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                        Skill
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={skill.name || ''}
-                        placeholder="e.g. Python"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const updated = (resume.skills || []).map((s, i) => i === idx ? { ...s, name: val } : s);
-                          updateResumeState({ ...resume, skills: updated });
-                        }}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                        Note (optional)
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={skill.note !== undefined ? skill.note : (skill.proficiency || '')}
-                        placeholder="e.g. Advanced, 2+ yrs, Frontend"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const updated = (resume.skills || []).map((s, i) => i === idx ? { ...s, note: val } : s);
-                          updateResumeState({ ...resume, skills: updated });
-                        }}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = (resume.skills || []).filter((_, i) => i !== idx);
-                        updateResumeState({ ...resume, skills: updated });
-                      }}
-                      className="btn btn-ghost btn-icon btn-sm"
-                      style={{ color: 'var(--danger)', marginTop: '21px', flexShrink: 0 }}
-                      title="Delete Skill"
+                {(resume.skills || []).map((skill, idx) => {
+                  const skillId = skill.id || `skill-${idx}`;
+                  const isDragging = draggedItemId === skillId;
+                  const isOver = dragOverItemId === skillId;
+                  const totalSkills = (resume.skills || []).length;
+                  return (
+                    <div
+                      key={skillId}
+                      data-reorder-id={skillId}
+                      data-reorder-section="skills"
+                      className={`builder-skills-row ${isDragging ? 'is-dragging' : ''} ${isOver ? 'is-drop-target' : ''}`}
+                      draggable={activeDraggableId === skillId}
+                      onDragStart={(e) => handleItemDragStart(e, skillId, 'skills')}
+                      onDragOver={(e) => handleItemDragOver(e, skillId, 'skills')}
+                      onDragLeave={() => handleItemDragLeave(skillId)}
+                      onDrop={(e) => handleItemDrop(e, skillId, 'skills', idx)}
+                      onDragEnd={handleItemDragEnd}
+                      style={{ display: 'flex', gap: '0.625rem', alignItems: 'flex-start' }}
                     >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+                      <div
+                        className="builder-skills-drag-handle"
+                        title="Hold and drag to reorder skill"
+                        aria-label={`Hold and drag to reorder ${skill.name || 'skill'}`}
+                        onMouseDown={() => setActiveDraggableId(skillId)}
+                        onMouseUp={() => setActiveDraggableId(null)}
+                        onTouchStart={(e) => handleTouchStart(e, skillId, 'skills', idx)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                        style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'var(--text-muted)', marginTop: '22px' }}
+                      >
+                        <GripVertical size={16} />
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: '150px' }}>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                          Skill
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={skill.name || ''}
+                          placeholder="e.g. Python"
+                          aria-label={`Skill name ${idx + 1}`}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = (resume.skills || []).map((s, i) => i === idx ? { ...s, name: val } : s);
+                            updateResumeState({ ...resume, skills: updated });
+                          }}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: '150px' }}>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                          Note (optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={skill.note !== undefined ? skill.note : (skill.proficiency || '')}
+                          placeholder="e.g. Advanced, 2+ yrs, Frontend"
+                          aria-label={`Skill note ${idx + 1}`}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = (resume.skills || []).map((s, i) => i === idx ? { ...s, note: val } : s);
+                            updateResumeState({ ...resume, skills: updated });
+                          }}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginTop: '21px', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => moveSkill(idx, -1)}
+                          disabled={idx === 0}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 5px' }}
+                          title="Move up"
+                          aria-label={`Move ${skill.name || 'skill'} up`}
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveSkill(idx, 1)}
+                          disabled={idx === totalSkills - 1}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 5px' }}
+                          title="Move down"
+                          aria-label={`Move ${skill.name || 'skill'} down`}
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (resume.skills || []).filter((_, i) => i !== idx);
+                            updateResumeState({ ...resume, skills: updated });
+                          }}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--danger)', padding: '4px 5px' }}
+                          title="Delete Skill"
+                          aria-label={`Delete ${skill.name || 'skill'}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div style={{ marginTop: '0.75rem' }}>
@@ -2247,7 +2552,7 @@ const ResumeBuilder = () => {
 
                     <div className="builder-field">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <label style={{ margin: 0 }}>Description & Quantifiable Highlights</label>
+                        <label style={{ margin: 0 }}>Description & Overview</label>
                         <button
                           type="button"
                           onClick={() => {
@@ -2275,9 +2580,135 @@ const ResumeBuilder = () => {
                         }}
                       />
                     </div>
+
+                    {/* Bullet Points Option for Project Description */}
+                    <div className="project-bullets-editor" style={{ marginTop: '0.625rem', padding: '0.75rem', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
+                          Project Accomplishment Bullets:
+                        </label>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {proj.description && (!proj.bullets || proj.bullets.length === 0 || (proj.bullets.length === 1 && !proj.bullets[0].text)) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const parsedBullets = proj.description
+                                  .split(/[.\n]/)
+                                  .map(s => s.trim().replace(/^[-•*]\s*/, ''))
+                                  .filter(s => s.length > 5)
+                                  .map(text => ({ id: generateId(), text }));
+                                if (parsedBullets.length > 0) {
+                                  const updated = (resume.projects || []).map(item =>
+                                    item.id === proj.id ? { ...item, bullets: parsedBullets } : item
+                                  );
+                                  updateResumeState({ ...resume, projects: updated });
+                                  addToast(`Converted description into ${parsedBullets.length} bullet points!`, 'success');
+                                }
+                              }}
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: '0.72rem', padding: '2px 8px', height: '24px' }}
+                              title="Convert existing description text into structured bullet points"
+                            >
+                              Convert to Bullets
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (resume.projects || []).map(item => {
+                                if (item.id !== proj.id) return item;
+                                const bullets = [...(item.bullets || []), { id: generateId(), text: '' }];
+                                return { ...item, bullets };
+                              });
+                              updateResumeState({ ...resume, projects: updated });
+                            }}
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: '0.72rem', padding: '2px 8px', height: '24px' }}
+                          >
+                            <Plus size={12} /> Add Bullet
+                          </button>
+                        </div>
+                      </div>
+
+                      {(proj.bullets || []).map((b, bIdx) => (
+                        <div key={b.id || bIdx} className="project-bullet-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                          <span className="project-bullet-marker" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>•</span>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={b.text || ''}
+                            placeholder="e.g. Engineered distributed event queue handling 50k events/sec."
+                            aria-label={`Project bullet ${bIdx + 1}`}
+                            onChange={(e) => {
+                              const updated = (resume.projects || []).map(item => {
+                                if (item.id !== proj.id) return item;
+                                const bullets = [...(item.bullets || [])];
+                                bullets[bIdx] = { ...bullets[bIdx], text: e.target.value };
+                                return { ...item, bullets };
+                              });
+                              updateResumeState({ ...resume, projects: updated });
+                            }}
+                            style={{ flex: 1, fontSize: '0.8125rem' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (resume.projects || []).map(item => {
+                                if (item.id !== proj.id) return item;
+                                const bullets = (item.bullets || []).filter((_, i) => i !== bIdx);
+                                return { ...item, bullets };
+                              });
+                              updateResumeState({ ...resume, projects: updated });
+                            }}
+                            className="btn btn-ghost btn-icon btn-sm"
+                            style={{ color: 'var(--danger)' }}
+                            title="Delete Bullet"
+                            aria-label="Delete bullet"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="builder-item-card-footer">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = (resume.projects || []).filter(item => item.id !== proj.id);
+                          updateResumeState({ ...resume, projects: updated });
+                        }}
+                        className="btn btn-ghost btn-sm builder-card-delete-btn"
+                        aria-label={`Delete ${proj.name || 'Project'}`}
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Project</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
+
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newProj = {
+                      id: generateId(),
+                      name: 'New Project',
+                      role: 'Lead Developer',
+                      technologies: ['React', 'Node.js'],
+                      link: '',
+                      description: 'Overview of the project and measurable results.',
+                      bullets: [{ id: generateId(), text: '' }]
+                    };
+                    updateResumeState({ ...resume, projects: [...(resume.projects || []), newProj] });
+                  }}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Plus size={14} /> Add Project
+                </button>
+              </div>
             </div>
           )}
 
@@ -2309,165 +2740,258 @@ const ResumeBuilder = () => {
                 </button>
               </div>
 
-              {(resume.certifications || []).map((cert, idx) => (
-                <div key={cert.id || idx} className="builder-item-card">
-                  <div className="builder-item-card-header">
-                    <strong className="builder-item-card-title">{cert.name || 'Certification Name'}</strong>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {(resume.certifications || []).map((cert, idx) => {
+                const certId = cert.id || `cert-${idx}`;
+                const isDragging = draggedItemId === certId;
+                const isOver = dragOverItemId === certId;
+                const totalCerts = (resume.certifications || []).length;
+                return (
+                  <div
+                    key={certId}
+                    data-reorder-id={certId}
+                    data-reorder-section="certifications"
+                    className={`builder-item-card ${isDragging ? 'is-dragging' : ''} ${isOver ? 'is-drop-target' : ''}`}
+                    draggable={activeDraggableId === certId}
+                    onDragStart={(e) => handleItemDragStart(e, certId, 'certifications')}
+                    onDragOver={(e) => handleItemDragOver(e, certId, 'certifications')}
+                    onDragLeave={() => handleItemDragLeave(certId)}
+                    onDrop={(e) => handleItemDrop(e, certId, 'certifications', idx)}
+                    onDragEnd={handleItemDragEnd}
+                  >
+                    <div className="builder-item-card-header">
+                      <div className="builder-card-header-left">
+                        <div
+                          className="builder-drag-handle"
+                          title="Hold and drag to reorder certification"
+                          aria-label={`Hold and drag to reorder ${cert.name || 'certification'}`}
+                          onMouseDown={() => setActiveDraggableId(certId)}
+                          onMouseUp={() => setActiveDraggableId(null)}
+                          onTouchStart={(e) => handleTouchStart(e, certId, 'certifications', idx)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchCancel={handleTouchEnd}
+                        >
+                          <GripVertical size={16} />
+                        </div>
+                        <strong className="builder-item-card-title">{cert.name || 'Certification Name'}</strong>
+                      </div>
+
+                      <div className="builder-card-header-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSectionImprovement({
+                              type: 'certification',
+                              title: cert.name || 'Certification',
+                              itemContext: { name: cert.name, issuer: cert.issuer, credentialId: cert.credentialId },
+                              originalText: `${cert.name || ''} issued by ${cert.issuer || ''}`.trim(),
+                              onApply: (improvedText, newSkills) => {
+                                if (newSkills && newSkills.length > 0) {
+                                  const existing = new Set((resume.skills || []).map(s => s.name?.toLowerCase()));
+                                  const toAdd = newSkills.filter(s => !existing.has(s.toLowerCase())).map(name => ({ id: generateId(), name, note: cert.name || 'Certification' }));
+                                  if (toAdd.length > 0) {
+                                    updateResumeState({ ...resume, skills: [...(resume.skills || []), ...toAdd] });
+                                    addToast(`Added ${toAdd.length} certification skill(s)!`, 'success');
+                                  }
+                                }
+                              }
+                            });
+                            setSectionImprovementModalOpen(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ gap: '4px', fontSize: '0.75rem', padding: '2px 8px', height: '26px' }}
+                          title="Suggest skills supported by this certification"
+                        >
+                          <Sparkles size={12} color="var(--accent-primary)" />
+                          <span>✦ Suggest Skills</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCertification(idx, -1)}
+                          disabled={idx === 0}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="Move up"
+                          aria-label={`Move ${cert.name || 'certification'} up`}
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCertification(idx, 1)}
+                          disabled={idx === totalCerts - 1}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="Move down"
+                          aria-label={`Move ${cert.name || 'certification'} down`}
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (resume.certifications || []).filter((_, i) => i !== idx);
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--danger)', padding: '4px 6px' }}
+                          title="Delete Certification"
+                          aria-label={`Delete ${cert.name || 'Certification'}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="builder-grid-2">
+                      <div className="builder-field">
+                        <label>Certification Name</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cert.name || ''}
+                          placeholder="e.g. AWS Certified Solutions Architect"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].name = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                      <div className="builder-field">
+                        <label>Issuing Organization</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cert.issuer || ''}
+                          placeholder="e.g. Amazon Web Services"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].issuer = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="builder-grid-2">
+                      <div className="builder-field">
+                        <label>Issue Date</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cert.issueDate || ''}
+                          placeholder="e.g. 2023 or June 2025"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].issueDate = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                      <div className="builder-field">
+                        <label>Expiry Date (Optional)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cert.expiryDate || ''}
+                          placeholder="e.g. 2026 or June 2028"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].expiryDate = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ margin: '-0.25rem 0 0.5rem 0' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!cert.expiryDate}
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            if (e.target.checked) {
+                              updated[idx].expiryDate = '';
+                            }
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                        Does not expire / Lifetime credential
+                      </label>
+                    </div>
+
+                    <div className="builder-grid-2">
+                      <div className="builder-field">
+                        <label>Credential ID / License #</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={cert.credentialId || ''}
+                          placeholder="e.g. AWS-PSA-123456"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].credentialId = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                      <div className="builder-field">
+                        <label>Verification URL / Link</label>
+                        <input
+                          type="url"
+                          className="form-input"
+                          value={cert.credentialUrl || cert.url || ''}
+                          placeholder="https://verify.certificate"
+                          onChange={(e) => {
+                            const updated = [...(resume.certifications || [])];
+                            updated[idx].credentialUrl = e.target.value;
+                            updated[idx].url = e.target.value;
+                            updateResumeState({ ...resume, certifications: updated });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="builder-item-card-footer">
                       <button
                         type="button"
                         onClick={() => {
-                          setActiveSectionImprovement({
-                            type: 'certification',
-                            title: cert.name || 'Certification',
-                            itemContext: { name: cert.name, issuer: cert.issuer, credentialId: cert.credentialId },
-                            originalText: `${cert.name || ''} issued by ${cert.issuer || ''}`.trim(),
-                            onApply: (improvedText, newSkills) => {
-                              if (newSkills && newSkills.length > 0) {
-                                const existing = new Set((resume.skills || []).map(s => s.name?.toLowerCase()));
-                                const toAdd = newSkills.filter(s => !existing.has(s.toLowerCase())).map(name => ({ id: generateId(), name, note: cert.name || 'Certification' }));
-                                if (toAdd.length > 0) {
-                                  updateResumeState({ ...resume, skills: [...(resume.skills || []), ...toAdd] });
-                                  addToast(`Added ${toAdd.length} certification skill(s)!`, 'success');
-                                }
-                              }
-                            }
-                          });
-                          setSectionImprovementModalOpen(true);
-                        }}
-                        className="btn btn-secondary btn-sm"
-                        style={{ gap: '4px', fontSize: '0.75rem', padding: '2px 8px', height: '26px' }}
-                        title="Suggest skills supported by this certification"
-                      >
-                        <Sparkles size={12} color="var(--accent-primary)" />
-                        <span>✦ Suggest Certification Skills</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          const updated = resume.certifications.filter((_, i) => i !== idx);
+                          const updated = (resume.certifications || []).filter((_, i) => i !== idx);
                           updateResumeState({ ...resume, certifications: updated });
                         }}
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: 'var(--danger)' }}
-                        title="Delete Certification"
+                        className="btn btn-ghost btn-sm builder-card-delete-btn"
+                        aria-label={`Delete ${cert.name || 'Certification'}`}
                       >
                         <Trash2 size={14} />
+                        <span>Delete Certification</span>
                       </button>
                     </div>
                   </div>
+                );
+              })}
 
-                  <div className="builder-grid-2">
-                    <div className="builder-field">
-                      <label>Certification Name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cert.name || ''}
-                        placeholder="e.g. AWS Certified Solutions Architect"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].name = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                    <div className="builder-field">
-                      <label>Issuing Organization</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cert.issuer || ''}
-                        placeholder="e.g. Amazon Web Services"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].issuer = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="builder-grid-2">
-                    <div className="builder-field">
-                      <label>Issue Date</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cert.issueDate || ''}
-                        placeholder="e.g. 2023 or June 2025"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].issueDate = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                    <div className="builder-field">
-                      <label>Expiry Date (Optional)</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cert.expiryDate || ''}
-                        placeholder="e.g. 2026 or June 2028"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].expiryDate = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ margin: '-0.25rem 0 0.5rem 0' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={!cert.expiryDate}
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          if (e.target.checked) {
-                            updated[idx].expiryDate = '';
-                          }
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                      Does not expire / Lifetime credential
-                    </label>
-                  </div>
-
-                  <div className="builder-grid-2">
-                    <div className="builder-field">
-                      <label>Credential ID / License #</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cert.credentialId || ''}
-                        placeholder="e.g. AWS-PSA-123456"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].credentialId = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                    <div className="builder-field">
-                      <label>Verification URL / Link</label>
-                      <input
-                        type="url"
-                        className="form-input"
-                        value={cert.credentialUrl || cert.url || ''}
-                        placeholder="https://verify.certificate"
-                        onChange={(e) => {
-                          const updated = [...resume.certifications];
-                          updated[idx].credentialUrl = e.target.value;
-                          updated[idx].url = e.target.value;
-                          updateResumeState({ ...resume, certifications: updated });
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newCert = {
+                      id: generateId(),
+                      name: '',
+                      issuer: '',
+                      issueDate: '',
+                      expiryDate: '',
+                      credentialId: '',
+                      credentialUrl: ''
+                    };
+                    updateResumeState({ ...resume, certifications: [...(resume.certifications || []), newCert] });
+                  }}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Plus size={14} /> Add Certification
+                </button>
+              </div>
             </div>
           )}
 
@@ -3207,7 +3731,14 @@ const ResumeBuilder = () => {
 
       {/* Gemini AI Resume Review Modal */}
       {aiReviewOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAiReviewOpen(false);
+          }}
+        >
           <div className="modal-content" style={{ maxWidth: '650px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -3216,24 +3747,39 @@ const ResumeBuilder = () => {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700 }}>
-                    Gemini AI Resume Review
+                    Google Gemini AI Resume Review
                   </h3>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    AI-powered diagnostic and specific modification advice
+                    Evaluates ATS safety, keyword alignment, and quantifiable bullet impact
                   </span>
                 </div>
               </div>
-              <button onClick={() => setAiReviewOpen(false)} className="btn btn-ghost btn-icon btn-sm">
+              <button onClick={() => setAiReviewOpen(false)} className="btn btn-ghost btn-icon btn-sm" aria-label="Close modal">
                 ✕
               </button>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
               {aiReviewLoading ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <Sparkles size={28} className="spin-slow" style={{ margin: '0 auto 12px auto', color: 'var(--accent-primary)' }} />
-                  <p style={{ margin: 0, fontWeight: 600 }}>Analyzing resume with Google Gemini 2.5...</p>
-                  <span style={{ fontSize: '0.75rem' }}>Evaluating ATS parser safety, keyword density, and bullet impact</span>
+                <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <Sparkles size={32} className="spin-slow" style={{ margin: '0 auto 12px auto', color: 'var(--accent-primary)' }} />
+                  <p style={{ margin: '0 0 6px 0', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                    Analyzing resume with Google Gemini...
+                  </p>
+                  <span style={{ fontSize: '0.78rem' }}>Evaluating ATS parser safety, keyword density, and quantifiable achievements</span>
+                </div>
+              ) : aiReviewError ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem 1.5rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <AlertCircle size={32} color="var(--danger)" style={{ margin: '0 auto 12px auto' }} />
+                  <h4 style={{ margin: '0 0 8px 0', color: 'var(--danger)', fontSize: '1rem', fontWeight: 700 }}>
+                    Resume Review Unavailable
+                  </h4>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {aiReviewError}
+                  </p>
+                  <button onClick={handleRunAiReview} className="btn btn-primary btn-sm" style={{ gap: '6px' }}>
+                    <RefreshCw size={13} /> Retry Review
+                  </button>
                 </div>
               ) : (
                 <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.85rem', lineHeight: '1.6' }}>
@@ -3282,9 +3828,28 @@ const ResumeBuilder = () => {
             </div>
 
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                Powered by Gemini 2.5 Flash
-              </span>
+              <div>
+                {aiReviewIsGemini ? (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    ✨ Powered by Google Gemini AI
+                  </span>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--warning)', fontWeight: 600 }}>
+                      ⚠️ Basic Heuristic Review (Live AI Offline)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRunAiReview}
+                      disabled={aiReviewLoading}
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '0.7rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <RefreshCw size={11} className={aiReviewLoading ? 'spin-slow' : ''} /> Retry Gemini
+                    </button>
+                  </div>
+                )}
+              </div>
               <button onClick={() => setAiReviewOpen(false)} className="btn btn-primary btn-sm">
                 Done
               </button>

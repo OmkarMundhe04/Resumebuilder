@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, CheckCircle2, Shield, X, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -16,6 +16,16 @@ const EvidenceCoachModal = ({ initialText = '', initialRole = '', onApplyBullet,
   });
   const [variants, setVariants] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -69,7 +79,15 @@ const EvidenceCoachModal = ({ initialText = '', initialRole = '', onApplyBullet,
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="evidence-coach-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="evidence-coach-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '650px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

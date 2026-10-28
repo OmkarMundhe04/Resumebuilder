@@ -10,7 +10,7 @@ const PageTransition = ({ children, className = '' }) => {
       animate="animate"
       exit="exit"
       className={className}
-      style={{ width: '100%' }}
+      style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
     >
       {children}
     </motion.div>

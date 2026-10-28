@@ -59,4 +59,6 @@ const shareLinkSchema = new mongoose.Schema({
   timestamps: true
 });
 
+shareLinkSchema.index({ userId: 1, resumeId: 1, isActive: 1 });
+
 module.exports = mongoose.model('ShareLink', shareLinkSchema);

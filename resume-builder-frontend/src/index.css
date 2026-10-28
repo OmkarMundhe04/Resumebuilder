@@ -595,6 +595,11 @@ p {
   display: flex !important;
   flex-direction: column !important;
   gap: var(--space-md) !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .builder-content-section {
@@ -1061,4 +1066,331 @@ p {
     display: none !important;
   }
 }
+
+/* ==========================================================================
+   CAREER PROFILE AUTOSAVE CONTROLS & STATUS BADGES
+   ========================================================================== */
+.autosave-control-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  user-select: none;
+}
+
+.autosave-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.autosave-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.autosave-pill-track {
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  position: relative;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.autosave-pill-track.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.autosave-pill-thumb {
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-fast);
+  transform: translateX(0);
+}
+
+.autosave-pill-track.active .autosave-pill-thumb {
+  transform: translateX(16px);
+}
+
+.autosave-state-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.autosave-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.1875rem 0.5rem;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+}
+
+.autosave-status-badge.status-saved {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.autosave-status-badge.status-dirty {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.autosave-status-badge.status-saving {
+  color: var(--accent-primary);
+  background: var(--accent-soft);
+}
+
+.autosave-status-badge.status-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.autosave-status-badge.status-disabled {
+  color: var(--text-muted);
+  background: var(--bg-surface-hover);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.dot-amber {
+  background-color: var(--warning);
+  box-shadow: 0 0 0 2px var(--warning-bg);
+}
+
+.autosave-retry-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.autosave-retry-btn:hover {
+  color: #b91c1c;
+}
+
+.spin-icon {
+  animation: autosave-spin 1s linear infinite;
+}
+
+@keyframes autosave-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   RESUME BUILDER DRAG & DROP AND EDITOR REACHABILITY SYSTEM
+   ========================================================================== */
+
+/* Main layout overflow fix - prevent double-nested scroll fighting */
+#main-content:has(.resume-builder-page) {
+  overflow: hidden !important;
+}
+
+.resume-builder-page {
+  height: 100% !important;
+  max-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
+}
+
+/* Skills Drag & Drop Row */
+.builder-skills-row {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+}
+
+.builder-skills-row:hover {
+  border-color: var(--border-default);
+}
+
+.builder-skills-row.is-dragging {
+  opacity: 0.45;
+  box-shadow: var(--shadow-md);
+  border: 1px dashed var(--accent-primary);
+  transform: scale(0.99);
+}
+
+.builder-skills-row.is-drop-target {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  background-color: var(--bg-surface-active);
+}
+
+.builder-skills-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.builder-skills-drag-handle:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-active);
+}
+
+.builder-skills-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Section Order Reordering Card */
+.builder-section-order-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8125rem;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.builder-section-order-card:hover {
+  border-color: var(--border-default);
+}
+
+.builder-section-order-card.is-dragging {
+  opacity: 0.4;
+  border: 1px dashed var(--accent-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.builder-section-order-card.is-drop-target {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  background: var(--bg-surface-active);
+}
+
+.builder-section-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.builder-section-drag-handle:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-active);
+}
+
+.builder-section-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Item Card Reachability Footer */
+.builder-item-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.625rem;
+  margin-top: 0.25rem;
+  border-top: 1px dashed var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.builder-card-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.builder-card-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+  color: #dc2626;
+}
+
+/* Project Bullets Editor */
+.project-bullets-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.project-bullet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-bullet-marker {
+  color: var(--accent-primary);
+  font-size: 0.875rem;
+  font-weight: bold;
+  user-select: none;
+}
+
+
 

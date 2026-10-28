@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles,
   CheckCircle2,
@@ -32,6 +32,23 @@ const SectionImprovementModal = ({
   const [extractedSkills, setExtractedSkills] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState({});
   const [isGeminiPowered, setIsGeminiPowered] = useState(false);
+  const isMountedRef = useRef(true);
+  const prevActiveElement = useRef(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      prevActiveElement.current = document.activeElement;
+    } else if (prevActiveElement.current && prevActiveElement.current.focus) {
+      prevActiveElement.current.focus();
+    }
+  }, [isOpen]);
 
   const isEmptyContent = (!originalText || !originalText.trim()) && (!itemContext || Object.keys(itemContext).length === 0 || !Object.values(itemContext).some(v => v && String(v).trim()));
 
@@ -67,6 +84,8 @@ const SectionImprovementModal = ({
         }
       }
 
+      if (!isMountedRef.current) return;
+
       if (rawSuggestions.length > 0) {
         setSuggestions(rawSuggestions);
         setIsGeminiPowered(Boolean(res.data.isGeminiPowered));
@@ -81,9 +100,12 @@ const SectionImprovementModal = ({
         setError(res?.data?.message || 'No enhancement suggestions could be generated.');
       }
     } catch (err) {
+      if (!isMountedRef.current) return;
       setError(err.response?.data?.message || err.message || 'Failed to enhance section. Please try again.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEmptyContent, type, originalText, targetRole, jobDescription]);
@@ -94,6 +116,15 @@ const SectionImprovementModal = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isEmptyContent]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -123,7 +154,15 @@ const SectionImprovementModal = ({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="section-improvement-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="section-improvement-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '680px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div className="modal-header">
